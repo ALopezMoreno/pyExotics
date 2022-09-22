@@ -1,0 +1,9 @@
+/posteriors
+/movie
+/gifs
+/images
+/movieHist
+/movie_files
+.idea/
+
+__pycache__/
