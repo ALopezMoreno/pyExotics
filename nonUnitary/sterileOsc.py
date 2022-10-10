@@ -1,8 +1,8 @@
 import numpy as np
 from vanilla import oscillatorBase as osc
 
-
-class oneHNL_oscillator(osc.Oscillator):
+#Implements one heavy neutral lepton mixing
+class oneSterile_oscillator(osc.Oscillator):
     def __init__(self, L, E, smear=None, inverted=0, block=False):
         osc.Oscillator.__init__(self, L, E, smearing=smear, inverted=inverted)
 
@@ -37,7 +37,7 @@ class oneHNL_oscillator(osc.Oscillator):
         self.A[2, 2] = complex(C34, 0)
         # The off-diagonals have complex components:
         self.A[1, 0] = complex(-np.cos(self.phi24 - self.phi14), np.sin(self.phi24 - self.phi14)) * S14 * S24
-        self.A[2, 0] = complex(C14 - np.cos(self.phi34 - self.phi14) * S14 * C24 * S34,
+        self.A[2, 0] = complex( - np.cos(self.phi34 - self.phi14) * S14 * C24 * S34,
                                np.sin(self.phi34 - self.phi14) * S14 * C24 * S34)
         self.A[2, 1] = complex(-np.cos(self.phi34 - self.phi24), np.sin(self.phi34 - self.phi24)) * S24 * S34
 
@@ -83,5 +83,4 @@ class oneHNL_oscillator(osc.Oscillator):
             P = self.A2[alpha, beta] - 4 * (Rterm21 + Rterm32 + Rterm31) + 2 * (Iterm21 + Iterm32 + Iterm31)
 
         P_avg = np.sum(P) / np.max([self.nsmear, 1])
-
-        return P_avg
+        return P_avg.real

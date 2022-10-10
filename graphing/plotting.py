@@ -7,6 +7,8 @@ import time
 from scipy.ndimage.filters import gaussian_filter
 import matplotlib.lines as mlines
 import matplotlib as mpl
+from matplotlib import colors
+
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
@@ -63,28 +65,370 @@ parula_map_r = LinearSegmentedColormap.from_list('parula_r', np.flip(cm_data, ax
 # Make a simple but good-looking line plot
 def niceLinPlot(ax, xdata, ydata, logx=True, logy=True, **kwargs):
     ax.plot(xdata, ydata, **kwargs)
-    if logy == True:
+    if logy:
          ax.set_yscale('log')
-    if logx == True:
+    if logx:
          ax.set_xscale('log')
     return 0
 
 # Make a simple but good-looking contour map
 def plot2Dcontour(ax, X, Y, data, logx=False, logy=False, cont=False, percentile=None, reverse=False, **kwargs):
-    if reverse==True:
+    if reverse:
         mycmap=parula_map_r
     else:
         mycmap=parula_map
 
     a = ax.contourf(X, Y, data, 100, cmap=mycmap, **kwargs) #YlGnBu_r
-    if logy == True:
+    if logy:
          ax.set_yscale('log')
-    if logx == True:
+    if logx:
          ax.set_xscale('log')
     if percentile:
-        if reverse == False:
+        if not reverse:
             percentile= 100-np.asarray(percentile)
         line = np.percentile(data, percentile)
         ax.contour(X,Y,data,levels=line, colors=('r',),linestyles=('-',),linewidths=(1,))
     return a
 
+
+
+# Plot histograms of |U_ij|
+def plotPMNS(mixing_matrices, abs=True, Jpreset=True, **kwargs):
+
+    if abs:
+        # Mixing matrixces is an array of complex 3x3 matrices
+        ModMatrix = np.abs(mixing_matrices)
+    else:
+        ModMatrix = mixing_matrices
+
+    fig, axs = plt.subplots(nrows=3, ncols=3, dpi=500, sharex=False, sharey=False)
+
+    if Jpreset:
+        n, bins, patches = axs[0, 0].hist(ModMatrix[:, 0, 0], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+        n, bins, patches = axs[0, 1].hist(ModMatrix[:, 0, 1], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+        n, bins, patches = axs[0, 2].hist(ModMatrix[:, 0, 2], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+
+        n, bins, patches = axs[1, 0].hist(ModMatrix[:, 1, 0], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+        n, bins, patches = axs[1, 1].hist(ModMatrix[:, 1, 1], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+        n, bins, patches = axs[1, 2].hist(ModMatrix[:, 1, 2], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+
+        n, bins, patches = axs[2, 0].hist(ModMatrix[:, 2, 0], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+        n, bins, patches = axs[2, 1].hist(ModMatrix[:, 2, 1], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+        n, bins, patches = axs[2, 2].hist(ModMatrix[:, 2, 2], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+
+        for i in range(3):
+            for j in range(3):
+                axs[i, j].set_xlim(-0.1, 0.1)
+                axs[i, j].set_yticks([])
+                axs[i, j].set_xticks([])
+                axs[2, j].xaxis.set_major_locator(ticker.LinearLocator(5))
+                axs[2, j].set_xticks(np.linspace(-0.1, 0.1, 5)[1:-1])
+                axs[2, j].xaxis.set_minor_locator(ticker.LinearLocator(25))
+                axs[2, j].set_xticklabels(np.linspace(-0.1, 0.1, 5)[1:-1], fontsize=7)
+                axs[2, j].xaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
+                axs[2, j].tick_params(axis='x')
+                axs[2, j].tick_params(which='both', direction="inout")
+    else:
+        axs[0, 0].hist(ModMatrix[:, 0, 0], **kwargs)
+        axs[0, 1].hist(ModMatrix[:, 0, 1], **kwargs)
+        axs[0, 2].hist(ModMatrix[:, 0, 2], **kwargs)
+
+        axs[1, 0].hist(ModMatrix[: 1, 0], **kwargs)
+        axs[1, 1].hist(ModMatrix[: 1, 1], **kwargs)
+        axs[1, 2].hist(ModMatrix[: 1, 2], **kwargs)
+
+        axs[2, 0].hist(ModMatrix[: 2, 0], **kwargs)
+        axs[2, 1].hist(ModMatrix[: 2, 1], **kwargs)
+        axs[2, 2].hist(ModMatrix[: 2, 2], **kwargs)
+
+    axs[0, 0].set_title(r"$m_1$", fontsize=12)
+    axs[0, 1].set_title(r"$m_2$", fontsize=12)
+    axs[0, 2].set_title(r"$m_3$", fontsize=12)
+
+    axs[0, 0].set_ylabel(r"$e$", fontsize=12)
+    axs[1, 0].set_ylabel(r"$\mu$", fontsize=12)
+    axs[2, 0].set_ylabel(r"$\tau$", fontsize=12)
+    for i in range(3):
+        for j in range(3):
+            axs[i, j].set_box_aspect(1)
+    plt.tight_layout(pad=2, w_pad=-11.5, h_pad=-0.20)
+# FUNCTIONS FOR PLOTTING MU-TAU UNITARITY TRIANGLES
+
+def PlotTriPost(s12, s23, s13, dcp, w, bnumber, r=0, s=0, third=False, colormap='viridis', normalisation=mpl.colors.Normalize(),
+            title='', asimovMode='', asimovValues=[], best_fit=[], contours=False):
+    fig, axs = plt.subplots(nrows=1, ncols=3, dpi=400, figsize=(8, 3.5))
+
+    cmap = cm.get_cmap(colormap, 256)
+    newcolors = cmap(np.linspace(0, 1, 256))
+    white = np.array([ 1, 1, 1, 1])
+    newcolors[:1, :] = white
+    colormap = ListedColormap(newcolors)
+
+    if title:
+        if asimovMode:
+            fig.suptitle(title + " \n \n Asimov: " + asimovMode,
+                         multialignment='left', fontsize=15)
+        else:
+            fig.suptitle(title, fontsize=15)
+
+    # U_pmns_R
+    U_e1_R, U_e2_R, U_e3_R, U_m1_R, U_m2_R, U_m3_R, U_t1_R, U_t2_R, U_t3_R = pars.load_real_nominal_PMNS(s12, s23, s13,
+                                                                                                         dcp, r, s)
+
+    # U_pmns_I
+    U_e1_I, U_e2_I, U_e3_I, U_m1_I, U_m2_I, U_m3_I, U_t1_I, U_t2_I, U_t3_I = pars.load_imag_nominal_PMNS(s12, s23, s13,
+                                                                                                         dcp, r, s)
+    # Onto the actual vertices
+    TRI1_V1 = np.asarray([np.multiply(U_e2_R, U_e3_R) - np.multiply(U_e2_I, -U_e3_I),
+                          np.multiply(U_e2_R, -U_e3_I) + np.multiply(U_e2_I, U_e3_R)])
+
+    TRI1_V2 = np.add(TRI1_V1, np.asarray([np.multiply(U_m2_R, U_m3_R) - np.multiply(U_m2_I, -U_m3_I),
+                                          np.multiply(U_m2_R, -U_m3_I) + np.multiply(U_m2_I, U_m3_R)]))
+
+    TRI1_V3 = np.add(TRI1_V2, np.asarray([np.multiply(U_t2_R, U_t3_R) - np.multiply(U_t2_I, -U_t3_I),
+                                          np.multiply(U_t2_R, -U_t3_I) + np.multiply(U_t2_I, U_t3_R)]))
+
+
+    TRI2_V1 = np.asarray([np.multiply(U_e3_R, U_e1_R) - np.multiply(U_e3_I, -U_e1_I),
+                          np.multiply(U_e3_R, -U_e1_I) + np.multiply(U_e3_I, U_e1_R)])
+
+    TRI2_V2 = np.add(TRI2_V1, np.asarray([np.multiply(U_m3_R, U_m1_R) - np.multiply(U_m3_I, -U_m1_I),
+                                          np.multiply(U_m3_R, -U_m1_I) + np.multiply(U_m3_I, U_m1_R)]))
+
+
+    TRI2_V3 = np.add(TRI2_V2, np.asarray([np.multiply(U_t3_R, U_t1_R) - np.multiply(U_t3_I, -U_t1_I),
+                                          np.multiply(U_t3_R, -U_t1_I) + np.multiply(U_t3_I, U_t1_R)]))
+
+
+    TRI3_V1 = np.asarray([np.multiply(U_e1_R, U_e2_R) - np.multiply(U_e1_I, -U_e2_I),
+                          np.multiply(U_e1_R, -U_e2_I) + np.multiply(U_e1_I, U_e2_R)])
+
+
+    TRI3_V2 = np.add(TRI3_V1, np.asarray([np.multiply(U_m1_R, U_m2_R) - np.multiply(U_m1_I, -U_m2_I),
+                                          np.multiply(U_m1_R, -U_m2_I) + np.multiply(U_m1_I, U_m2_R)]))
+
+
+    TRI3_V3 = np.add(TRI3_V2, np.asarray([np.multiply(U_t1_R, U_t2_R) - np.multiply(U_t1_I, -U_t2_I),
+                                          np.multiply(U_t1_R, -U_t2_I) + np.multiply(U_t1_I, U_t2_R)]))
+
+
+    if third != True:
+        ws = np.concatenate((w, w))
+        T1 = np.concatenate((TRI1_V1, TRI1_V2), axis=1)
+        T2 = np.concatenate((TRI2_V1, TRI2_V2), axis=1)
+        T3 = np.concatenate((TRI3_V1, TRI3_V2), axis=1)
+
+    else:
+        ws = np.concatenate((w, w, w))
+        T1 = np.concatenate((TRI1_V1, TRI1_V2, TRI1_V3), axis=1)
+        T2 = np.concatenate((TRI2_V1, TRI2_V2, TRI2_V3), axis=1)
+        T3 = np.concatenate((TRI3_V1, TRI3_V2, TRI3_V3), axis=1)
+
+
+    axs[0].hist2d(T1[0, :], T1[1, :], bins=bnumber, weights=ws, cmap=colormap, norm=normalisation)
+                  #range=np.array([(-0.5, 0.5), (-0.5, 0.5)]))
+    axs[1].hist2d(T2[0, :], T2[1, :], bins=bnumber, weights=ws, cmap=colormap, norm=normalisation)
+                  #range=np.array([(-0.5, 0.5), (-0.5, 0.5)]))
+    axs[2].hist2d(T3[0, :], T3[1, :], bins=bnumber, weights=ws, cmap=colormap, norm=normalisation)
+                  #range=np.array([(-0.5, 0.5), (-0.5, 0.5)]))
+
+
+
+
+    absmin = []
+    absmax = []
+    for i in range(3):
+        ymin, ymax = axs[i].get_ylim()
+        xmin, xmax = axs[i].get_xlim()
+        absmin.append(np.min([xmin, ymin]))
+        absmax.append(np.max([xmax, ymax]))
+        axs[i].axvline(x=0, color='black', linestyle='dashed', linewidth=0.8, alpha=0.5)
+        axs[i].axhline(y=0, color='black', linestyle='dashed', linewidth=0.8, alpha=0.5)
+
+
+    if contours == True:
+
+        T1V1 = contour(TRI1_V1[0, :], TRI1_V1[1, :], int(bnumber), 0.90, 0.68, np.array([(absmin[0], absmax[0]), (absmin[0], absmax[0])]), weights=w)
+        T1V2 = contour(TRI1_V2[0, :], TRI1_V2[1, :], int(bnumber), 0.90, 0.68, np.array([(absmin[0], absmax[0]), (absmin[0], absmax[0])]), weights=w)
+        T1V3 = contour(TRI1_V3[0, :], TRI1_V3[1, :], int(bnumber), 0.90, 0.68, np.array([(absmin[0], absmax[0]), (absmin[0], absmax[0])]), weights=w)
+
+        T2V1 = contour(TRI2_V1[0, :], TRI2_V1[1, :], int(bnumber), 0.90, 0.68, np.array([(absmin[1], absmax[1]), (absmin[1], absmax[1])]), weights=w)
+        T2V2 = contour(TRI2_V2[0, :], TRI2_V2[1, :], int(bnumber), 0.90, 0.68, np.array([(absmin[1], absmax[1]), (absmin[1], absmax[1])]), weights=w)
+        T2V3 = contour(TRI2_V3[0, :], TRI2_V3[1, :], int(bnumber), 0.90, 0.68, np.array([(absmin[1], absmax[1]), (absmin[1], absmax[1])]), weights=w)
+
+        T3V1 = contour(TRI3_V1[0, :], TRI3_V1[1, :], int(bnumber), 0.90, 0.68, np.array([(absmin[2], absmax[2]), (absmin[2], absmax[2])]), weights=w)
+        T3V2 = contour(TRI3_V2[0, :], TRI3_V2[1, :], int(bnumber), 0.90, 0.68, np.array([(absmin[2], absmax[2]), (absmin[2], absmax[2])]), weights=w)
+        T3V3 = contour(TRI3_V3[0, :], TRI3_V3[1, :], int(bnumber), 0.90, 0.68, np.array([(absmin[2], absmax[2]), (absmin[2], absmax[2])]), weights=w)
+
+        if third != True:
+            CT1 = np.concatenate((T1V1, T1V2), axis=0)
+            CT2 = np.concatenate((T2V1, T2V2), axis=0)
+            CT3 = np.concatenate((T3V1, T3V2), axis=0)
+        else:
+            CT1 = np.concatenate((T1V1, T1V2, T1V3), axis=0)
+            CT2 = np.concatenate((T2V1, T2V2, T2V3), axis=0)
+            CT3 = np.concatenate((T3V1, T3V2, T3V3), axis=0)
+
+
+        axs[0].hist2d(CT1[:, 0], CT1[:, 1], bins=bnumber, cmap=colormap, # norm=normalisation,
+                      range=np.array([(absmin[0], absmax[0]), (absmin[0], absmax[0])]))
+        axs[1].hist2d(CT2[:, 0], CT2[:, 1], bins=bnumber, cmap=colormap, # norm=normalisation,
+                      range=np.array([(absmin[1], absmax[1]), (absmin[1], absmax[1])]))
+        axs[2].hist2d(CT3[:, 0], CT3[:, 1], bins=bnumber, cmap=colormap, # norm=normalisation,
+                      range=np.array([(absmin[2], absmax[2]), (absmin[2], absmax[2])]))
+
+
+
+    else:
+        axs[0].hist2d(T1[0, :], T1[1, :], bins=bnumber, weights=ws, cmap=colormap, norm=normalisation,
+                      range=np.array([(-0.5, 0.5), (-0.5, 0.5)]))
+        axs[1].hist2d(T2[0, :], T2[1, :], bins=bnumber, weights=ws, cmap=colormap, norm=normalisation,
+                      range=np.array([(-0.5, 0.5), (-0.5, 0.5)]))
+        axs[2].hist2d(T3[0, :], T3[1, :], bins=bnumber, weights=ws, cmap=colormap, norm=normalisation,
+                      range=np.array([(-0.5, 0.5), (-0.5, 0.5)]))
+
+    if len(asimovValues) != 0:
+
+        s12 = asimovValues[0]
+        s23 = asimovValues[1]
+        s13 = asimovValues[2]
+        dcp = asimovValues[3]
+        # U_pmns_R
+        U_e1_R, U_e2_R, U_e3_R, U_m1_R, U_m2_R, U_m3_R, U_t1_R, U_t2_R, U_t3_R = pars.load_real_nominal_PMNS(s12, s23,
+                                                                                                             s13,
+                                                                                                             dcp, r, s)
+
+        # U_pmns_I
+        U_e1_I, U_e2_I, U_e3_I, U_m1_I, U_m2_I, U_m3_I, U_t1_I, U_t2_I, U_t3_I = pars.load_imag_nominal_PMNS(s12, s23,
+                                                                                                             s13,
+                                                                                                             dcp, r, s)
+        # Onto the actual vertices
+        TRI1_V1 = np.asarray([np.multiply(U_e2_R, U_e3_R) - np.multiply(U_e2_I, -U_e3_I),
+                              np.multiply(U_e2_R, -U_e3_I) + np.multiply(U_e2_I, U_e3_R)])
+        TRI1_V2 = np.add(TRI1_V1, np.asarray([np.multiply(U_m2_R, U_m3_R) - np.multiply(U_m2_I, -U_m3_I),
+                                              np.multiply(U_m2_R, -U_m3_I) + np.multiply(U_m2_I, U_m3_R)]))
+        TRI1_V3 = np.add(TRI1_V2, np.asarray([np.multiply(U_t2_R, U_t3_R) - np.multiply(U_t2_I, -U_t3_I),
+                                              np.multiply(U_t2_R, -U_t3_I) + np.multiply(U_t2_I, U_t3_R)]))
+
+        TRI2_V1 = np.asarray([np.multiply(U_e3_R, U_e1_R) - np.multiply(U_e3_I, -U_e1_I),
+                              np.multiply(U_e3_R, -U_e1_I) + np.multiply(U_e3_I, U_e1_R)])
+        TRI2_V2 = np.add(TRI2_V1, np.asarray([np.multiply(U_m3_R, U_m1_R) - np.multiply(U_m3_I, -U_m1_I),
+                                              np.multiply(U_m3_R, -U_m1_I) + np.multiply(U_m3_I, U_m1_R)]))
+        TRI2_V3 = np.add(TRI2_V2, np.asarray([np.multiply(U_t3_R, U_t1_R) - np.multiply(U_t3_I, -U_t1_I),
+                                              np.multiply(U_t3_R, -U_t1_I) + np.multiply(U_t3_I, U_t1_R)]))
+
+        TRI3_V1 = np.asarray([np.multiply(U_e1_R, U_e2_R) - np.multiply(U_e1_I, -U_e2_I),
+                              np.multiply(U_e1_R, -U_e2_I) + np.multiply(U_e1_I, U_e2_R)])
+        TRI3_V2 = np.add(TRI3_V1, np.asarray([np.multiply(U_m1_R, U_m2_R) - np.multiply(U_m1_I, -U_m2_I),
+                                              np.multiply(U_m1_R, -U_m2_I) + np.multiply(U_m1_I, U_m2_R)]))
+        TRI3_V3 = np.add(TRI3_V2, np.asarray([np.multiply(U_t1_R, U_t2_R) - np.multiply(U_t1_I, -U_t2_I),
+                                              np	.multiply(U_t1_R, -U_t2_I) + np.multiply(U_t1_I, U_t2_R)]))
+        aT1 = np.array(([0, 0], TRI1_V1, TRI1_V2, TRI1_V3))
+        aT2 = np.array(([0, 0], TRI2_V1, TRI2_V2, TRI2_V3))
+        aT3 = np.array(([0, 0], TRI3_V1, TRI3_V2, TRI3_V3))
+        axs[0].plot(aT1[:, 0], aT1[:, 1], 'r-', linewidth = 0.7)
+        axs[1].plot(aT2[:, 0], aT2[:, 1], 'r-', linewidth = 0.7)
+        axs[2].plot(aT3[:, 0], aT3[:, 1], 'r-', linewidth = 0.7, label='Asimov triangle')
+
+    if len(best_fit) != 0:
+        s12 = best_fit[0]
+        s23 = best_fit[1]
+        s13 = best_fit[2]
+        dcp = best_fit[3]
+        # U_pmns_R
+        U_e1_R, U_e2_R, U_e3_R, U_m1_R, U_m2_R, U_m3_R, U_t1_R, U_t2_R, U_t3_R = pars.load_real_nominal_PMNS(s12, s23,
+                                                                                                             s13,
+                                                                                                             dcp, r, s)
+
+        # U_pmns_I
+        U_e1_I, U_e2_I, U_e3_I, U_m1_I, U_m2_I, U_m3_I, U_t1_I, U_t2_I, U_t3_I = pars.load_imag_nominal_PMNS(s12, s23,
+                                                                                                             s13,
+                                                                                                             dcp, r, s)
+        # Onto the actual vertices
+        TRI1_V1 = np.asarray([np.multiply(U_e2_R, U_e3_R) - np.multiply(U_e2_I, -U_e3_I),
+                              np.multiply(U_e2_R, -U_e3_I) + np.multiply(U_e2_I, U_e3_R)])
+        TRI1_V2 = np.add(TRI1_V1, np.asarray([np.multiply(U_m2_R, U_m3_R) - np.multiply(U_m2_I, -U_m3_I),
+                                              np.multiply(U_m2_R, -U_m3_I) + np.multiply(U_m2_I, U_m3_R)]))
+        TRI1_V3 = np.add(TRI1_V2, np.asarray([np.multiply(U_t2_R, U_t3_R) - np.multiply(U_t2_I, -U_t3_I),
+                                              np.multiply(U_t2_R, -U_t3_I) + np.multiply(U_t2_I, U_t3_R)]))
+
+        TRI2_V1 = np.asarray([np.multiply(U_e3_R, U_e1_R) - np.multiply(U_e3_I, -U_e1_I),
+                              np.multiply(U_e3_R, -U_e1_I) + np.multiply(U_e3_I, U_e1_R)])
+        TRI2_V2 = np.add(TRI2_V1, np.asarray([np.multiply(U_m3_R, U_m1_R) - np.multiply(U_m3_I, -U_m1_I),
+                                              np.multiply(U_m3_R, -U_m1_I) + np.multiply(U_m3_I, U_m1_R)]))
+        TRI2_V3 = np.add(TRI2_V2, np.asarray([np.multiply(U_t3_R, U_t1_R) - np.multiply(U_t3_I, -U_t1_I),
+                                              np.multiply(U_t3_R, -U_t1_I) + np.multiply(U_t3_I, U_t1_R)]))
+
+        TRI3_V1 = np.asarray([np.multiply(U_e1_R, U_e2_R) - np.multiply(U_e1_I, -U_e2_I),
+                              np.multiply(U_e1_R, -U_e2_I) + np.multiply(U_e1_I, U_e2_R)])
+        TRI3_V2 = np.add(TRI3_V1, np.asarray([np.multiply(U_m1_R, U_m2_R) - np.multiply(U_m1_I, -U_m2_I),
+                                              np.multiply(U_m1_R, -U_m2_I) + np.multiply(U_m1_I, U_m2_R)]))
+        TRI3_V3 = np.add(TRI3_V2, np.asarray([np.multiply(U_t1_R, U_t2_R) - np.multiply(U_t1_I, -U_t2_I),
+                                              np.multiply(U_t1_R, -U_t2_I) + np.multiply(U_t1_I, U_t2_R)]))
+        aT1 = np.array(([0, 0], TRI1_V1, TRI1_V2, TRI1_V3))
+        aT2 = np.array(([0, 0], TRI2_V1, TRI2_V2, TRI2_V3))
+        aT3 = np.array(([0, 0], TRI3_V1, TRI3_V2, TRI3_V3))
+        axs[0].plot(aT1[:, 0], aT1[:, 1], 'b-', linewidth = 0.7, alpha=0.7)
+        axs[1].plot(aT2[:, 0], aT2[:, 1], 'b-', linewidth = 0.7, alpha=0.7)
+        axs[2].plot(aT3[:, 0], aT3[:, 1], 'b-', linewidth = 0.7, alpha=0.7, label='Best fit triangle')
+
+    for i in range(3):
+        axs[i].set_xlim([absmin[i], absmax[i]])
+        axs[i].set_ylim([absmin[i], absmax[i]])
+        axs[i].set_box_aspect(1)
+        axs[i].xaxis.set_major_locator(ticker.LinearLocator(13))
+        axs[i].set_xticks([axs[i].get_xticks()[0],
+                           axs[i].get_xticks()[6],
+                           axs[i].get_xticks()[12]])
+        axs[i].xaxis.set_minor_locator(ticker.LinearLocator(25))
+        axs[i].yaxis.set_major_locator(ticker.LinearLocator(13))
+        axs[i].set_yticks([axs[i].get_yticks()[0],
+                           axs[i].get_yticks()[6],
+                           axs[i].get_yticks()[12]])
+        axs[i].yaxis.set_minor_locator(ticker.LinearLocator(25))
+        axs[i].xaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
+        axs[i].yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
+        axs[i].tick_params(which='both', direction="inout")
+
+    title0 = r"$\Delta_1 : U_{e2}U^{*}_{e3} + U_{\mu 2}U^{*}_{\mu 3} + U_{\tau 2}U^{*}_{\tau 3}$"
+    title1 = r"$\Delta_2 : U_{e3}U^{*}_{e1} + U_{\mu 3}U^{*}_{\mu 1} + U_{\tau 3}U^{*}_{\tau 1}$"
+    title2 = r"$\Delta_3 : U_{e1}U^{*}_{e2} + U_{\mu 1}U^{*}_{\mu 2} + U_{\tau 1}U^{*}_{\tau 2}$"
+
+    axs[0].set_title(title0, fontsize=9)
+    axs[1].set_title(title1, fontsize=9)
+    axs[2].set_title(title2, fontsize=9)
+    axs[2].legend(bbox_to_anchor= [0.9,1.4])
+
+    plt.tight_layout()
+
+    plt.savefig("./images/Majorana_triangles_" + title + "--" + str(r) + '_' + str(s) +
+                ".png")
+    plt.show()
+    return ()
