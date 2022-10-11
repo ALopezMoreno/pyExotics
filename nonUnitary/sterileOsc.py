@@ -43,8 +43,6 @@ class oneSterile_oscillator(osc.Oscillator):
 
         # Since this is a lower-triangular matrix the remaining entries are zero
         # It only remains to square the matrix
-        self.A2 = np.matmul(self.A, self.A)
-
     def build_mixing_matrix(self):
         self.mixM = np.matmul(self.A, self.PMNS)
 
@@ -77,10 +75,12 @@ class oneSterile_oscillator(osc.Oscillator):
         Iterm31 = ((self.mixM[alpha, 2]).conjugate() * self.mixM[beta, 2] * self.mixM[alpha, 0] *
                    (self.mixM[beta, 0]).conjugate()).imag * np.sin(1.27 * 2 * self.dm31_2 * self.L / tempE)
 
+        self.M2 = np.matmul(self.mixM, (self.mixM.conjugate()).T)
+
         if antineutrino:
-            P = self.A2[alpha, beta] - 4 * (Rterm21 + Rterm32 + Rterm31) - 2 * (Iterm21 + Iterm32 + Iterm31)
+            P = self.M2[alpha, beta] - 4 * (Rterm21 + Rterm32 + Rterm31) - 2 * (Iterm21 + Iterm32 + Iterm31)
         else:
-            P = self.A2[alpha, beta] - 4 * (Rterm21 + Rterm32 + Rterm31) + 2 * (Iterm21 + Iterm32 + Iterm31)
+            P = self.M2[alpha, beta] - 4 * (Rterm21 + Rterm32 + Rterm31) + 2 * (Iterm21 + Iterm32 + Iterm31)
 
         P_avg = np.sum(P) / np.max([self.nsmear, 1])
         return P_avg.real
