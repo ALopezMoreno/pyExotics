@@ -4,8 +4,9 @@ import numpy as np
 
 class UnitarityGeometries:
     # There are 6 possible "triangles", which are only triangles if the matrix is unitary, so we save them as cuadrilaterals
-    # There are 3 possible "quadrilaterals, which become pentagons if the matrix is not unitary
+    # There are 3 possible "quadrilaterals, which become pentagons if the matrix is not unitary? // Rethink this
     # The triangles are related to row-column operations
+
     def __init__(self, mixingMatrix, majorana_phase_1, majorana_phase_2):
         self.e_mu = np.zeros(4, dtype=complex)
         self.e_tau = np.zeros(4, dtype=complex)
@@ -27,6 +28,9 @@ class UnitarityGeometries:
 
     # Calculate the vertices. With normalisations as per "Leptonic Unitarity Triangles"
     # This forces two of the vertices to be (0, 0) and (0, 1), which is v nice, but does not allow for Maj. phases
+    # Maybe I should stop doing this? After all I am interested in the triangles themselves!
+
+    # OOH but what I could do is a parameterisation where I fit the angles of the triangle!!! I will think about this.
     def get_shapes(self):
         # Row triangles
         self.e_mu[1] = complex(1, 0)

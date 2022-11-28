@@ -115,11 +115,11 @@ class KKoscillator(osc.Oscillator):
         if antineutrino == True:
             for i in range(self.KKmodes.nodes):
 
-                terms0 = ((self.PMNS[alpha, 0]).conjugate() * self.PMNS[beta, 0]).conjugate() * self.KKmodes.V[0, i] ** 2 * \
+                terms0 = ((self.PMNS[alpha, 0]) * self.PMNS[beta, 0]).conjugate() * self.KKmodes.V[0, i] ** 2 * \
                               np.exp( -self.KKmodes.masses0[i] ** 2 * self.L * 1.27 * 2j / tempE)
-                terms1 = ((self.PMNS[alpha, 1]).conjugate() * self.PMNS[beta, 1]).conjugate() * self.KKmodes.V[1, i] ** 2 * \
+                terms1 = ((self.PMNS[alpha, 1]) * self.PMNS[beta, 1]).conjugate() * self.KKmodes.V[1, i] ** 2 * \
                               np.exp( -self.KKmodes.masses1[i] ** 2 * self.L * 1.27 * 2j / tempE)
-                terms2 = ((self.PMNS[alpha, 2]).conjugate() * self.PMNS[beta, 2]).conjugate() * self.KKmodes.V[2, i] ** 2 * \
+                terms2 = ((self.PMNS[alpha, 2]) * self.PMNS[beta, 2]).conjugate() * self.KKmodes.V[2, i] ** 2 * \
                               np.exp( -self.KKmodes.masses2[i] ** 2 * self.L * 1.27 * 2j / tempE)
 
                 terms += terms0 + terms1 + terms2

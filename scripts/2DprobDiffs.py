@@ -28,6 +28,7 @@ E = 1
 nbins = 80
 mDirac = 0.5 #  Ev
 
+# Load up an experiment!
 exp = experiments.experiment(experiments.eProfile(profile), L, smooth=100)
 
 Rs = np.linspace(0.0001, 1, 100)
@@ -44,6 +45,7 @@ for k in range(len(Rs)):
 
     print('beginning new frame')
     print(k)
+    # Load up a propagator
     propagator = KKmodes.KKoscillator(L, E, KKmodes.KKtower(10, mDirac, Rs[k], inverted=False, approx=flag))
     #propagator = oscillatorBase.Oscillator(L, E)
     #propagator.dcp = 2.618

@@ -93,7 +93,7 @@ def plot2Dcontour(ax, X, Y, data, logx=False, logy=False, cont=False, percentile
 
 
 # Plot histograms of |U_ij|
-def plotPMNS(mixing_matrices, abs=True, Jpreset=True, **kwargs):
+def plotPMNS(mixing_matrices, abs=True, Jpreset=True, lowlim=-0.1, highlim=0.1, **kwargs):
 
     if abs:
         # Mixing matrixces is an array of complex 3x3 matrices
@@ -104,54 +104,54 @@ def plotPMNS(mixing_matrices, abs=True, Jpreset=True, **kwargs):
     fig, axs = plt.subplots(nrows=3, ncols=3, dpi=500, sharex=False, sharey=False)
 
     if Jpreset:
-        n, bins, patches = axs[0, 0].hist(ModMatrix[:, 0, 0], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n, bins, patches = axs[0, 0].hist(ModMatrix[:, 0, 0], facecolor='#2ab0ff',  alpha=0.7, **kwargs)
         n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
         for i in range(len(patches)):
             patches[i].set_facecolor(parula_map(n[i] / max(n)))
-        n, bins, patches = axs[0, 1].hist(ModMatrix[:, 0, 1], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n, bins, patches = axs[0, 1].hist(ModMatrix[:, 0, 1],  facecolor='#2ab0ff',  alpha=0.7, **kwargs)
         n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
         for i in range(len(patches)):
             patches[i].set_facecolor(parula_map(n[i] / max(n)))
-        n, bins, patches = axs[0, 2].hist(ModMatrix[:, 0, 2], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
-        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
-        for i in range(len(patches)):
-            patches[i].set_facecolor(parula_map(n[i] / max(n)))
-
-        n, bins, patches = axs[1, 0].hist(ModMatrix[:, 1, 0], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
-        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
-        for i in range(len(patches)):
-            patches[i].set_facecolor(parula_map(n[i] / max(n)))
-        n, bins, patches = axs[1, 1].hist(ModMatrix[:, 1, 1], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
-        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
-        for i in range(len(patches)):
-            patches[i].set_facecolor(parula_map(n[i] / max(n)))
-        n, bins, patches = axs[1, 2].hist(ModMatrix[:, 1, 2], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n, bins, patches = axs[0, 2].hist(ModMatrix[:, 0, 2],  facecolor='#2ab0ff',  alpha=0.7, **kwargs)
         n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
         for i in range(len(patches)):
             patches[i].set_facecolor(parula_map(n[i] / max(n)))
 
-        n, bins, patches = axs[2, 0].hist(ModMatrix[:, 2, 0], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n, bins, patches = axs[1, 0].hist(ModMatrix[:, 1, 0],  facecolor='#2ab0ff',  alpha=0.7, **kwargs)
         n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
         for i in range(len(patches)):
             patches[i].set_facecolor(parula_map(n[i] / max(n)))
-        n, bins, patches = axs[2, 1].hist(ModMatrix[:, 2, 1], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n, bins, patches = axs[1, 1].hist(ModMatrix[:, 1, 1],  facecolor='#2ab0ff',  alpha=0.7, **kwargs)
         n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
         for i in range(len(patches)):
             patches[i].set_facecolor(parula_map(n[i] / max(n)))
-        n, bins, patches = axs[2, 2].hist(ModMatrix[:, 2, 2], bins=80, facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n, bins, patches = axs[1, 2].hist(ModMatrix[:, 1, 2],  facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+
+        n, bins, patches = axs[2, 0].hist(ModMatrix[:, 2, 0],  facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+        n, bins, patches = axs[2, 1].hist(ModMatrix[:, 2, 1],  facecolor='#2ab0ff',  alpha=0.7, **kwargs)
+        n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
+        for i in range(len(patches)):
+            patches[i].set_facecolor(parula_map(n[i] / max(n)))
+        n, bins, patches = axs[2, 2].hist(ModMatrix[:, 2, 2],  facecolor='#2ab0ff',  alpha=0.7, **kwargs)
         n = n.astype('int')  # it MUST be integer# Good old loop. Choose colormap of your taste
         for i in range(len(patches)):
             patches[i].set_facecolor(parula_map(n[i] / max(n)))
 
         for i in range(3):
             for j in range(3):
-                axs[i, j].set_xlim(-0.1, 0.1)
+                axs[i, j].set_xlim(lowlim, highlim)
                 axs[i, j].set_yticks([])
                 axs[i, j].set_xticks([])
                 axs[2, j].xaxis.set_major_locator(ticker.LinearLocator(5))
-                axs[2, j].set_xticks(np.linspace(-0.1, 0.1, 5)[1:-1])
+                axs[2, j].set_xticks(np.linspace(lowlim, highlim, 5)[1:-1])
                 axs[2, j].xaxis.set_minor_locator(ticker.LinearLocator(25))
-                axs[2, j].set_xticklabels(np.linspace(-0.1, 0.1, 5)[1:-1], fontsize=7)
+                axs[2, j].set_xticklabels(np.linspace(lowlim, highlim, 5)[1:-1], fontsize=7)
                 axs[2, j].xaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
                 axs[2, j].tick_params(axis='x')
                 axs[2, j].tick_params(which='both', direction="inout")
