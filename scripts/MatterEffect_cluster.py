@@ -47,16 +47,15 @@ def main():
     h4 = matterHamiltonian(0, 4)
     h3 = matterHamiltonian(0, 3)
 
-    E = sys.argv[1]
-    npoints = sys.argv[2]
+    E = float(sys.argv[1])
+    npoints = int(sys.argv[2])
     output = sys.argv[3]
     print('E = ' + str(E) + ' MeV')
     print('will calculate oscillation at ' + str(npoints) +' points')
     print('save file will be ' + output)
     print('************************************************************')
-    print(E)
 
-    centralE = E * 10 ** -3
+    centralE = E * 10**-3
 
     prop = customPropagator.HamiltonianPropagator(h3, 123*centralE, centralE)
     prop.masses = [0, np.sqrt(7.42 * 10 ** (-5)), np.sqrt(2.51 * 10 ** (-3)), 10**3]
