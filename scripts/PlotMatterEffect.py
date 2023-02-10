@@ -31,7 +31,7 @@ def main():
     ax.axvspan(10**-2, 10**2, color='black', alpha=0.2)
     #plotting.draw_line_between_verticals(ax, 10**-2, 10**2, draw_arrow=True, thickness=1.5, xscale='log')
     ax.set_ylim(0, 1)
-    ax.set_xlim((rho[0]+1), (rho[-1]-1))
+    ax.set_xlim((rho[0]), (rho[-1]))
 
     #  plot 
     #plt.title(r'Non-U effective mixing angles in matter for pp, Be$^7$, pep and Be$^8$ neutrinos')
