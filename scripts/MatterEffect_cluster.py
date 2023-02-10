@@ -50,21 +50,23 @@ def main():
     E = sys.argv[1]
     npoints = sys.argv[2]
     output = sys.argv[3]
+    print('E = ' + str(E) + ' MeV')
+    print('will calculate oscillation at ' + str(npoints) +' points')
+    print('save file will be ' + output)
 
-    prop = customPropagator.HamiltonianPropagator(h3, 295/0.6*E, E*10**-3)
+    centralE = E * 10 ** -3
+
+    prop = customPropagator.HamiltonianPropagator(h3, 123*centralE, centralE)
     prop.masses = [0, np.sqrt(7.42 * 10 ** (-5)), np.sqrt(2.51 * 10 ** (-3)), 10**3]
     prop.mixingPars = [np.arcsin(np.sqrt(0.307)), np.arcsin(np.sqrt(0.022)), np.arcsin(np.sqrt(0.561)),
                        np.arcsin(np.sqrt(0.)), np.arcsin(np.sqrt(0.)), np.arcsin(np.sqrt(0.)), -1.601, 0.0, 0.0]
     prop.generations = 4
     prop.new_hamiltonian(h4)
     prop.update()
-    npoints = 200
 
     #  calculate matter effect for varying densities
     start = -4
     end = 7
-
-    centralE = E * 10 ** -3
 
     rho = np.logspace(start, end, npoints)
     probL = np.zeros(npoints)
