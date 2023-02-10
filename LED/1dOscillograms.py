@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from vanilla import oscillatorBase as base
 from nonUnitary import sterileOsc
 
-nPoints = 10000
+nPoints = 100
 E = np.ones(nPoints)  # np.logspace(-2, 2, nPoints)
 L = np.logspace(0, 4, nPoints)
 
@@ -13,7 +13,7 @@ P = np.zeros(nPoints)
 P1 = np.zeros(nPoints)
 
 x = modes.KKtower(5, 0.3, 0.4, inverted=False) #  0.2 in latest plot
-propagator = modes.KKoscillator(L[0], E[0], x, smear=[0.5 * 3, 1000], inv=False)
+propagator = modes.KKoscillator(L[0], E[0], x, smear=[0.5 * 3, 1000])
 propOriginal = base.Oscillator(L[0], E[0], smearing=[0.5 * 3, 1000], inverted=False)
 
 for i in range(1, nPoints):

@@ -5,8 +5,7 @@ import numpy as np
 class Oscillator:
 
     def __init__(self, L, E, smearing=None, inverted=0, block=False):  # L in Km and E in GeV
-        if smearing is None:
-            smearing = [0, 0]
+
         self.block = block
 
         self.theta12 = np.arcsin(np.sqrt(0.307))
@@ -16,15 +15,19 @@ class Oscillator:
 
         self.dm21_2 = 7.42 * 10 ** (-5)
         if inverted == 0:
-            self.dm31_2 = 2.51 * 10 ** (-3)
+            self.dm32_2 = 2.494 * 10 ** (-3)
         else:
-            self.dm31_2 = - 2.51 * 10 ** (-3)
+            self.dm32_2 = - 2.494 * 10 ** (-3)
 
-        self.dm32_2 = self.dm31_2 - self.dm21_2
+        self.dm31_2 = self.dm32_2 + self.dm21_2
         self.L = L
         self.E = E
-        self.Esmear = smearing[0]
-        self.nsmear = smearing[1]
+        if smearing:
+            self.Esmear = smearing[0]
+            self.nsmear = smearing[1]
+        else:
+            self.Esmear = None
+            self.nsmear = 0
         self.PMNS = np.zeros((3, 3), dtype=complex)
         self.setPMNS()
 
@@ -65,29 +68,29 @@ class Oscillator:
             if not self.block:
                 tempE = np.random.normal(self.E, 1 / 3 * self.Esmear * self.E, self.nsmear)
             else:
-                tempE = np.random.uniform(self.E - 0.5 * self.Esmear, self.E + 0.5 * self.Esmear, self.nsmear)
+                tempE = np.random.uniform(self.E - 0.5 * self.Esmear*self.E, self.E + 0.5 * self.Esmear*self.E, self.nsmear)
         if alpha == beta:
             KronD = 1
         else:
             KronD = 0
 
         Rterm21 = ((self.PMNS[alpha, 1]).conjugate() * self.PMNS[beta, 1] * self.PMNS[alpha, 0] *
-                   (self.PMNS[beta, 0]).conjugate()).real * np.sin(1.27 * self.dm21_2 * self.L / tempE) ** 2
+                   (self.PMNS[beta, 0]).conjugate()).real * np.sin(1.26693281 * self.dm21_2 * self.L / tempE) ** 2
 
         Rterm32 = ((self.PMNS[alpha, 2]).conjugate() * self.PMNS[beta, 2] * self.PMNS[alpha, 1] *
-                   (self.PMNS[beta, 1]).conjugate()).real * np.sin(1.27 * self.dm32_2 * self.L / tempE) ** 2
+                   (self.PMNS[beta, 1]).conjugate()).real * np.sin(1.26693281 * self.dm32_2 * self.L / tempE) ** 2
 
         Rterm31 = ((self.PMNS[alpha, 2]).conjugate() * self.PMNS[beta, 2] * self.PMNS[alpha, 0] *
-                   (self.PMNS[beta, 0]).conjugate()).real * np.sin(1.27 * self.dm31_2 * self.L / tempE) ** 2
+                   (self.PMNS[beta, 0]).conjugate()).real * np.sin(1.26693281 * self.dm31_2 * self.L / tempE) ** 2
 
         Iterm21 = ((self.PMNS[alpha, 1]).conjugate() * self.PMNS[beta, 1] * self.PMNS[alpha, 0] *
-                   (self.PMNS[beta, 0]).conjugate()).imag * np.sin(1.27 * 2 * self.dm21_2 * self.L / tempE)
+                   (self.PMNS[beta, 0]).conjugate()).imag * np.sin(1.26693281 * 2 * self.dm21_2 * self.L / tempE)
 
         Iterm32 = ((self.PMNS[alpha, 2]).conjugate() * self.PMNS[beta, 2] * self.PMNS[alpha, 1] *
-                   (self.PMNS[beta, 1]).conjugate()).imag * np.sin(1.27 * 2 * self.dm32_2 * self.L / tempE)
+                   (self.PMNS[beta, 1]).conjugate()).imag * np.sin(1.26693281 * 2 * self.dm32_2 * self.L / tempE)
 
         Iterm31 = ((self.PMNS[alpha, 2]).conjugate() * self.PMNS[beta, 2] * self.PMNS[alpha, 0] *
-                   (self.PMNS[beta, 0]).conjugate()).imag * np.sin(1.27 * 2 * self.dm31_2 * self.L / tempE)
+                   (self.PMNS[beta, 0]).conjugate()).imag * np.sin(1.26693281 * 2 * self.dm31_2 * self.L / tempE)
 
         if antineutrino == True:
             P = KronD - 4 * (Rterm21 + Rterm32 + Rterm31) - 2 * (Iterm21 + Iterm32 + Iterm31)

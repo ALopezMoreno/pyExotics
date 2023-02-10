@@ -149,3 +149,7 @@ class HamiltonianPropagator:
         self.vEigenvals, self.vMixingMatrix = self.getOrderedEigenObjects(self.vHam)
         self.setFullHamiltonian()
         self.eigenvals, self.mixingMatrix = self.getOrderedEigenObjects(self.hamiltonian)
+
+    def new_hamiltonian(self, new):
+        self.newHam = new
+        self.update()

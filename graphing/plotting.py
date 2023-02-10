@@ -8,6 +8,7 @@ from scipy.ndimage.filters import gaussian_filter
 import matplotlib.lines as mlines
 import matplotlib as mpl
 from matplotlib import colors
+import matplotlib.patches as patches
 
 plt.rcParams.update({
     "text.usetex": True,
@@ -432,3 +433,44 @@ def PlotTriPost(s12, s23, s13, dcp, w, bnumber, r=0, s=0, third=False, colormap=
                 ".png")
     plt.show()
     return ()
+
+# DRAW A LINE BETWEEN TWO VERTICAL POINTS
+def draw_line_between_verticals(ax, x1, x2, draw_arrow=False, height=0.5, text=None, thickness=1, xscale='linear', prefactor=10**-2):
+    ymin, ymax = ax.get_ylim()
+    ypos = ymin + height * (ymax - ymin)
+    if xscale == 'log':
+        x1l, x2l = np.log10([x1, x2])
+    else:
+        x1l, x2l = [x1, x2]
+    ax.plot([x1, x1], [ymin, ymax], 'k-', lw=1)
+    ax.plot([x2, x2], [ymin, ymax], 'k-', lw=1)
+    if draw_arrow:
+        ax.arrow(x2, ypos, 0.99*(-np.abs(x2-x1)), 0, head_width=0.03*(ymax-ymin), head_length=-prefactor*(x1-x2), fc='k', ec='k', lw=thickness, length_includes_head=True)
+        ax.plot([x1, x2], [ypos, ypos], 'k-', lw=thickness)
+
+    else:
+        ax.plot([x1, x2], [ypos, ypos], 'k-', lw=thickness)
+    if text:
+        text_height = height + 0.05 * (ymin - ymax)
+        text_width = (x2 - x1) * 0.2
+        if xscale == 'log':
+            x1, x2 = np.log10([x1, x2])
+            text_x = np.mean([x1, x2])
+            text_y = text_height
+        else:
+            text_x = (x1 + x2) / 2
+            text_y = text_height
+        rect = patches.Rectangle(
+            (text_x - text_width / 2, text_height), text_width, 0.05 * (ymin - ymax),
+            linewidth=1,
+            edgecolor='gray',
+            facecolor='white',
+            alpha=1,
+            zorder=10,
+            transform=ax.transData,
+            clip_on=False
+        )
+        ax.add_patch(rect)
+        ax.text(text_x, text_y, text, ha='center', va='bottom', transform=ax.transData, zorder=11, clip_on=False)
+
+

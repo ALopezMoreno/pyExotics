@@ -3,8 +3,8 @@ from vanilla import oscillatorBase as osc
 
 #Implements one heavy neutral lepton mixing
 class oneSterile_oscillator(osc.Oscillator):
-    def __init__(self, L, E, smear=None, inverted=0, block=False):
-        osc.Oscillator.__init__(self, L, E, smearing=smear, inverted=inverted)
+    def __init__(self, L, E, smearing=None, inverted=0, block=False):
+        osc.Oscillator.__init__(self, L, E, smearing=smearing, inverted=inverted)
 
         # Always instance with a trivial non-unitary part:
         # New mixing angles:
@@ -16,6 +16,7 @@ class oneSterile_oscillator(osc.Oscillator):
         self.phi14 = 0
         self.phi24 = 0
         self.phi34 = 0
+        self.setPMNS()
 
         self.A = np.identity(3, dtype=complex)
         self.set_nonUnitary()
@@ -58,29 +59,29 @@ class oneSterile_oscillator(osc.Oscillator):
                 tempE = np.random.uniform(self.E - 0.5 * self.Esmear, self.E + 0.5 * self.Esmear, self.nsmear)
 
         Rterm21 = ((self.mixM[alpha, 1]).conjugate() * self.mixM[beta, 1] * self.mixM[alpha, 0] *
-                   (self.mixM[beta, 0]).conjugate()).real * np.sin(1.27 * self.dm21_2 * self.L / tempE) ** 2
+                   (self.mixM[beta, 0]).conjugate()).real * np.sin( 1.26693281 * self.dm21_2 * self.L / tempE) ** 2
 
         Rterm32 = ((self.mixM[alpha, 2]).conjugate() * self.mixM[beta, 2] * self.mixM[alpha, 1] *
-                   (self.mixM[beta, 1]).conjugate()).real * np.sin(1.27 * self.dm32_2 * self.L / tempE) ** 2
+                   (self.mixM[beta, 1]).conjugate()).real * np.sin(1.26693281 * self.dm32_2 * self.L / tempE) ** 2
 
         Rterm31 = ((self.mixM[alpha, 2]).conjugate() * self.mixM[beta, 2] * self.mixM[alpha, 0] *
-                   (self.mixM[beta, 0]).conjugate()).real * np.sin(1.27 * self.dm31_2 * self.L / tempE) ** 2
+                   (self.mixM[beta, 0]).conjugate()).real * np.sin(1.26693281 * self.dm31_2 * self.L / tempE) ** 2
 
         Iterm21 = ((self.mixM[alpha, 1]).conjugate() * self.mixM[beta, 1] * self.mixM[alpha, 0] *
-                   (self.mixM[beta, 0]).conjugate()).imag * np.sin(1.27 * 2 * self.dm21_2 * self.L / tempE)
+                   (self.mixM[beta, 0]).conjugate()).imag * np.sin(1.26693281 * 2 * self.dm21_2 * self.L / tempE)
 
         Iterm32 = ((self.mixM[alpha, 2]).conjugate() * self.mixM[beta, 2] * self.mixM[alpha, 1] *
-                   (self.mixM[beta, 1]).conjugate()).imag * np.sin(1.27 * 2 * self.dm32_2 * self.L / tempE)
+                   (self.mixM[beta, 1]).conjugate()).imag * np.sin(1.26693281 * 2 * self.dm32_2 * self.L / tempE)
 
         Iterm31 = ((self.mixM[alpha, 2]).conjugate() * self.mixM[beta, 2] * self.mixM[alpha, 0] *
-                   (self.mixM[beta, 0]).conjugate()).imag * np.sin(1.27 * 2 * self.dm31_2 * self.L / tempE)
+                   (self.mixM[beta, 0]).conjugate()).imag * np.sin(1.26693281 * 2 * self.dm31_2 * self.L / tempE)
 
         self.M2 = np.matmul(self.mixM, (self.mixM.conjugate()).T)
 
         if antineutrino:
-            P = self.M2[alpha, beta] - 4 * (Rterm21 + Rterm32 + Rterm31) - 2 * (Iterm21 + Iterm32 + Iterm31)
+            P = self.M2[alpha, beta]*self.M2[alpha, beta].conjugate() - 4 * (Rterm21 + Rterm32 + Rterm31) - 2 * (Iterm21 + Iterm32 + Iterm31)
         else:
-            P = self.M2[alpha, beta] - 4 * (Rterm21 + Rterm32 + Rterm31) + 2 * (Iterm21 + Iterm32 + Iterm31)
+            P = self.M2[alpha, beta]*self.M2[alpha, beta].conjugate() - 4 * (Rterm21 + Rterm32 + Rterm31) + 2 * (Iterm21 + Iterm32 + Iterm31)
 
         P_avg = np.sum(P) / np.max([self.nsmear, 1])
-        return P_avg.real
+        return P_avg
