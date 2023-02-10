@@ -53,6 +53,8 @@ def main():
     print('E = ' + str(E) + ' MeV')
     print('will calculate oscillation at ' + str(npoints) +' points')
     print('save file will be ' + output)
+    print('************************************************************')
+    print(E)
 
     centralE = E * 10 ** -3
 
