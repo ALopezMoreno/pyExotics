@@ -7,6 +7,9 @@ sys.path.append('../')
 from HamiltonianSolver import customPropagator
 from graphing import plotting
 
+def save_data(filename, rho, osc):
+    data = np.column_stack((rho, osc))
+    np.savetxt(filename, data, delimiter="\t", fmt='%.9f')
 
 def matterHamiltonian(density, ngens):
     #  nominal matter hamiltonian
@@ -83,7 +86,7 @@ def main():
         for j in range(3):
             probs[i][j] = p_osc[j]
 
-    np.savetxt(output, probs, delimiter="\t", fmt='%.9f')
+    save_data(output, rho, probs)
 
 if __name__ == '__main__':
     main()
