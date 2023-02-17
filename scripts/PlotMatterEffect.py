@@ -28,14 +28,15 @@ def main():
     legends = [r'$P_{ee}$', r'$P_{e\mu}$', r'$P_{\mu\mu}$']
 
     #  Set axis properties (and allow for solar range arrow)
-    ax.axvspan(10**-2, 10**2, color='black', alpha=0.2)
+    #ax.axvspan(10**-2, 10**2, color='black', alpha=0.2)
+    ax.axvline(x=2.6, color='black', linestyle='--')
     #plotting.draw_line_between_verticals(ax, 10**-2, 10**2, draw_arrow=True, thickness=1.5, xscale='log')
     ax.set_ylim(0, 1)
     ax.set_xlim((rho[0]), (rho[-1]))
 
     #  plot 
     #plt.title(r'Non-U effective mixing angles in matter for pp, Be$^7$, pep and Be$^8$ neutrinos')
-    plt.title(r'Non-U 10MeV neutrino and 1keV sterile noMixing(vanilla)')
+    plt.title(r'Non-U 1GeV neutrino at 1st min. 1MeV sterile 0.01 Mixing')
     for i in range(3):
        ax.axhline(y=osc[0, i], color=colourses[i], linestyle='--', linewidth=1.5)
        plotting.niceLinPlot(ax, rho, osc[:, i], logy=False, color=colourses[i], linewidth=1.5, label=legends[i])
