@@ -212,7 +212,7 @@ def extractMixingAngles(mixMatrix):
 
 # GPU version of the hamiltonian propagator
 @numba.jitclass([
-    ('newHamiltonian', np.ndarray),
+    ('newHamiltonian', np.float64[:, :]),
     ('L', numba.float64),
     ('E', numba.float64),
     ('IH', numba.bool_),
