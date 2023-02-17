@@ -59,10 +59,10 @@ def get_shifts(matterH, energies, weights, l, myRange, sinMode, npoints):
 
     for j in range(npoints):
         # Set propagators to invertse and normal hierarchies, nu and nubar
-        prop_NH_nu = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
-        prop_IH_nu = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
-        prop_NH_nub = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
-        prop_IH_nub = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
+        prop_NH_nu = customPropagator.HamiltonianPropagatorGPU(matterH, l, energies[j])
+        prop_IH_nu = customPropagator.HamiltonianPropagatorGPU(matterH, l, energies[j])
+        prop_NH_nub = customPropagator.HamiltonianPropagatorGPU(matterH, l, energies[j])
+        prop_IH_nub = customPropagator.HamiltonianPropagatorGPU(matterH, l, energies[j])
 
         prop_IH_nu.IH = True
         prop_IH_nub.IH = True
