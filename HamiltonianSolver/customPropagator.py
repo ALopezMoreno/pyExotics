@@ -218,6 +218,7 @@ def extractMixingAngles(mixMatrix):
     ('IH', numba.boolean),
     ('antinu', numba.boolean)
 ])
+@numba.cuda.jit(boundscheck=False)
 class HamiltonianPropagatorGPU:
 
     def __init__(self, newHamiltonian, L, E, IH=False, antinu=False):
