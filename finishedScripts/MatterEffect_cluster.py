@@ -5,7 +5,6 @@ import sys
 sys.path.append('../')
 
 from HamiltonianSolver import customPropagator
-from graphing import plotting
 
 def save_data(filename, rho, osc):
     data = np.column_stack((rho, osc))
@@ -63,14 +62,14 @@ def main():
     prop = customPropagator.HamiltonianPropagator(h3, 295/0.6*centralE, centralE)
     prop.masses = [0, np.sqrt(7.42 * 10 ** (-5)), np.sqrt(2.51 * 10 ** (-3)), 10**3]
     prop.mixingPars = [np.arcsin(np.sqrt(0.307)), np.arcsin(np.sqrt(0.022)), np.arcsin(np.sqrt(0.561)),
-                       np.arcsin(np.sqrt(0.)), np.arcsin(np.sqrt(0.)), np.arcsin(np.sqrt(0.)), -1.601, 0.0, 0.0]
+                       np.arcsin(np.sqrt(0.01)), np.arcsin(np.sqrt(0.01)), np.arcsin(np.sqrt(0.01)), -1.601, 0., 0.]
     prop.generations = 4
     prop.new_hamiltonian(h4)
     prop.update()
 
     #  calculate matter effect for varying densities
-    start = -3
-    end = 6
+    start = 0
+    end = 4
 
     rho = np.logspace(start, end, npoints)
     probL = np.zeros(npoints)
