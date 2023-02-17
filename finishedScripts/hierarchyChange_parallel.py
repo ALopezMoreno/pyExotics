@@ -55,24 +55,57 @@ def get_shifts_parallel(matterH, energies, weights, l, myRange, sinMode, npoints
     avg_shifts_NH = np.zeros((npoints))
     avg_shifts_IH = np.zeros((npoints))
 
+    avg_probs_NH = np.zeros((npoints))
+    avg_probs_IH = np.zeros((npoints))
+
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = []
 
         for j in range(len(energies)):
-            futures.append(executor.submit(get_shifts_helper, matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs, dcps))
+            futures.append(executor.submit(get_shifts_helper, matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs))
 
         for future in concurrent.futures.as_completed(futures):
             j, shifts_NH_j, shifts_IH_j = future.result()
 
-            # Finally, add to the average:
-            avg_shifts_NH += shifts_NH_j * normed_weights[j]
-            avg_shifts_IH += shifts_IH_j * normed_weights[j]
+            # add to the average:
+            avg_probs_NH += shifts_NH_j * normed_weights[j]
+            avg_probs_IH += shifts_IH_j * normed_weights[j]
+
+    # finally, get shifts
+    # Normal Hierarchy
+    for i in range(npoints):
+        differences = np.absolute(avg_probs_IH - avg_probs_NH[i])
+        index = differences.argmin()
+        if differences[index] < 0.0001:
+            avg_shifts_NH[i] = dcps[index] - dcps[i]
+
+            # Wrap if necessary
+            if avg_shifts_NH[i] > myRange[1]:
+                avg_shifts_NH[i] -= 2 * myRange[1]
+            elif avg_shifts_NH[i] < myRange[0]:
+                avg_shifts_NH[i] += 2 * myRange[1]
+        else:
+            avg_shifts_NH[i] = np.nan  # Return nan if no shift exists
+
+    # Inverse Hierarchy
+    for i in range(npoints):
+        differences = np.absolute(avg_probs_NH - avg_probs_IH[i])
+        index = differences.argmin()
+        if differences[index] < 0.0001:
+            avg_shifts_IH[i] = dcps[index] - dcps[i]
+
+            # Wrap if necessary
+            if avg_shifts_IH[i] > myRange[1]:
+                avg_shifts_IH[i] -= 2 * myRange[1]
+            elif avg_shifts_IH[i] < myRange[0]:
+                avg_shifts_IH[i] += 2 * myRange[1]
+        else:
+            avg_shifts_IH[i] = np.nan  # Return nan if no shift exists
 
     return avg_shifts_NH, avg_shifts_IH
 
-def get_shifts_helper(matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs, dcps):
-    shifts_NH = np.zeros((npoints))
-    shifts_IH = np.zeros((npoints))  # Same for shifting from the inverted hierarchy
+def get_shifts_helper(matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs):
+
 
     # Set propagators to invertse and normal hierarchies, nu and nubar
     prop_NH_nu = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
@@ -102,40 +135,10 @@ def get_shifts_helper(matterH, energies, weights, l, myRange, sinMode, npoints, 
 
         vals[i, 0] = probabilities[0] - probabilities[1]
         vals[i, 1] = probabilities[2] - probabilities[3]
+        if i % 100 == 0:
+            print('progress i:' + str(i))
 
-    # find shifts:
-    # Normal Hierarchy
-    for i in range(npoints):
-        differences = np.absolute(vals[:, 1] - vals[i, 0])
-        index = differences.argmin()
-        if differences[index] < 0.0001:
-            shifts_NH[i] = dcps[index] - dcps[i]
-
-            # Wrap if necessary
-            if shifts_NH[i] > myRange[1]:
-                shifts_NH[i] -= 2 * myRange[1]
-            elif shifts_NH[i] < myRange[0]:
-                shifts_NH[i] += 2 * myRange[1]
-        else:
-            shifts_NH[i] = np.nan  # Return nan if no shift exists
-
-    # Inverse Hierarchy
-    for i in range(npoints):
-        differences = np.absolute(vals[:, 0] - vals[i, 1])
-        index = differences.argmin()
-        if differences[index] < 0.0001:
-            shifts_IH[i] = dcps[index] - dcps[i]
-
-            # Wrap if necessary
-            if shifts_IH[i] > myRange[1]:
-                shifts_IH[i] -= 2 * myRange[1]
-            elif shifts_IH[i] < myRange[0]:
-                shifts_IH[i] += 2 * myRange[1]
-        else:
-            shifts_IH[i] = np.nan  # Return nan if no shift exists
-
-
-    return j, shifts_NH, shifts_IH
+    return j, vals[: ,0], vals[:, 1]
 
 
 def main():
@@ -165,7 +168,7 @@ def main():
         myRange = np.array([-np.pi + 0.0001, np.pi - 0.0001])
 
     # Number of points you want to calculate the shifts at
-    npoints = 10 ** 3
+    npoints = 10 ** 2
 
     # Set the matter effect's contribution to the Hamiltonian
     matterH = customPropagator.matterHamiltonian(n_e, 3)
