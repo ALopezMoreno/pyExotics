@@ -37,7 +37,7 @@ class IsSin():
 
 
 # function optimized to run on gpu. Calculates the shifts
-@jit(target_backend='cuda')
+@jit(target='cuda')
 def get_shifts(matterH, energies, weights, l, myRange, sinMode, npoints):
     # Calculates the necessary dcp(or sindcp) shifts for given energies
     # Assumes remaining parameters are in asimov A
