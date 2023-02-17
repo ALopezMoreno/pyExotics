@@ -8,7 +8,7 @@ from numba import jit, cuda
 # saves to file "savefile"
 # -------------------------------------------------------------------------------------------------------------------------#
 
-# SHOULD BE USED AS: python hierarchyChange_GPU spectrumFileName.txt electronDensity baseline savefile.txt (optional sindcp)
+# SHOULD BE USED AS: python hierarchyChange_GPU.py spectrumFileName.txt electronDensity baseline savefile.txt (optional sindcp)
 
 # -------------------------------------------------------------------------------------------------------------------------#
 def load_spectrum(filename):
