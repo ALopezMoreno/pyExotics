@@ -2,7 +2,8 @@ import sys
 sys.path.append('../')
 import numpy as np
 from HamiltonianSolver import customPropagator
-import concurrent.futures
+from multiprocessing import Pool
+import time
 
 # Takes an energy spectrum file, a density, and a baseline and calculates the necessary shift
 # in dcp to move to the degenerate mass hierarchy point.
@@ -12,6 +13,10 @@ import concurrent.futures
 # SHOULD BE USED AS: python hierarchyChange_GPU.py spectrumFileName.txt electronDensity baseline savefile.txt (optional sindcp)
 
 # -------------------------------------------------------------------------------------------------------------------------#
+def get_shifts_helper_wrapper(args):
+    # Unpack the arguments and call the original function
+    return get_shifts_helper(*args)
+
 def load_spectrum(filename):
     data = np.loadtxt(filename, dtype=np.float, ndmin=2)
     num_cols = data.shape[1]
@@ -57,15 +62,16 @@ def get_shifts_parallel(matterH, energies, weights, l, myRange, sinMode, npoints
 
     avg_probs_NH = np.zeros((npoints))
     avg_probs_IH = np.zeros((npoints))
+    print("starting parallelism")
+    with Pool() as pool:
+        # Create a list of argument tuples
+        args_list = [(matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs) for j in range(len(energies))]
+        # Map the function to the arguments using the pool of worker processes
+        results = pool.map(get_shifts_helper_wrapper, args_list)
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = []
-
-        for j in range(len(energies)):
-            futures.append(executor.submit(get_shifts_helper, matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs))
-
-        for future in concurrent.futures.as_completed(futures):
-            j, shifts_NH_j, shifts_IH_j = future.result()
+        # Unpack the results
+        for result in results:
+            j, shifts_NH_j, shifts_IH_j = result
 
             # add to the average:
             avg_probs_NH += shifts_NH_j * normed_weights[j]
@@ -106,7 +112,6 @@ def get_shifts_parallel(matterH, energies, weights, l, myRange, sinMode, npoints
 
 def get_shifts_helper(matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs):
 
-
     # Set propagators to invertse and normal hierarchies, nu and nubar
     prop_NH_nu = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
     prop_IH_nu = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
@@ -123,7 +128,7 @@ def get_shifts_helper(matterH, energies, weights, l, myRange, sinMode, npoints, 
     probabilities = np.zeros(4)
 
     vals = np.zeros((npoints, 2))
-
+    start_time = time.time()
     # Loop through dcp
     for i in range(npoints):
         for propagator in props:
@@ -135,8 +140,8 @@ def get_shifts_helper(matterH, energies, weights, l, myRange, sinMode, npoints, 
 
         vals[i, 0] = probabilities[0] - probabilities[1]
         vals[i, 1] = probabilities[2] - probabilities[3]
-        if i % 100 == 0:
-            print('progress i:' + str(i))
+        if i % 10 == 0:
+            print("iteration no. "+str(i)+". We have been running for " + str(int(time.time() - start_time)) + " seconds")
 
     return j, vals[: ,0], vals[:, 1]
 
@@ -168,7 +173,7 @@ def main():
         myRange = np.array([-np.pi + 0.0001, np.pi - 0.0001])
 
     # Number of points you want to calculate the shifts at
-    npoints = 10 ** 2
+    npoints = 7919 # look for prime numbers and combine
 
     # Set the matter effect's contribution to the Hamiltonian
     matterH = customPropagator.matterHamiltonian(n_e, 3)
