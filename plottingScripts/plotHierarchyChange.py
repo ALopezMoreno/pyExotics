@@ -27,7 +27,7 @@ def main():
     ax.set_ylim(-1*np.pi, 1*np.pi)
     plt.ylabel(r'Shift')
     plt.xlabel(r'$\delta_{CP}$')
-    plt.title(r'Required shift to find degenerate IH point (HK)')
+    plt.title(r'Required shift to find degenerate point (HK)')
 
     plt.axvline(x=-1.602, color='goldenrod', linewidth=1.5, label='Asimov A')
     plt.axvline(x=0, color='lightseagreen', linewidth=1.5, label='Asimov B')

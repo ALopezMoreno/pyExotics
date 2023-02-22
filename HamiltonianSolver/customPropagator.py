@@ -5,7 +5,9 @@
 import sympy
 import numpy as np
 from math import comb
-import numba
+from functools import reduce
+from multiprocessing import Pool
+
 class HamiltonianPropagator:
 
     def __init__(self, newHamiltonian, L, E, IH=False, antinu=False):
@@ -170,8 +172,8 @@ class HamiltonianPropagator:
             self.masses = [0, np.sqrt(7.42 * 10 ** (-5)), np.sqrt(2.51 * 10 ** (-3))]
 
 
-# Now a function containing the usual matter hamiltonian for n generations
-def matterHamiltonian(density, ngens):
+# A function containing the usual matter hamiltonian for n generations and a given electron density
+def matterHamiltonian(density, ngens=3):
     #  nominal matter hamiltonian
     H = np.zeros((ngens, ngens))
     H[0, 0] = density * 1.663787e-5 * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
@@ -180,7 +182,7 @@ def matterHamiltonian(density, ngens):
             H[i, i] = -2/3*H[0, 0]
     return H
 
-# And a function for recovering mixing angles from a given 3x3 mixing matrix
+# A function for recovering mixing angles from a given 3x3 mixing matrix
 def extractMixingAngles(mixMatrix):
     #  get mixing angles from generic unitary 3x3 matrix
 
@@ -209,3 +211,109 @@ def extractMixingAngles(mixMatrix):
 
     return np.array([np.sin(th12)**2, np.sin(th23)**2, np.sin(th13)**2, dcp])
 
+# A recursive function for finding an "optimal" binning in the approximation to a varying matter potential
+def split_range(func, max_change, start, end):
+    # Calculate the maximum absolute value of the derivative within the range
+    # We need to make some guesses about how many bins we want.
+    # Getting the derivative at many points might slow down everytihng
+    points = np.linspace(start, end, 20)
+    derivative = np.gradient(func(points), points)
+    max_derivative = np.amax(np.abs(derivative))
+
+    # If the maximum derivative is less than or equal to max_change, return the range as a single bin
+    if max_derivative <= max_change:
+        return [(start, end)]
+    # Otherwise, split the range into two sub-ranges and recursively split each sub-range
+    else:
+        mid = (start + end) / 2
+        left_bins = split_range(func, max_change, start, mid)
+        right_bins = split_range(func, max_change, mid, end)
+        return left_bins + right_bins
+
+class VaryingPotentialSolver():
+    # A class for solving a path integral approximately by dividing into small
+    # sections of constant potential
+    def __init__(self, propagator, matterHam, ne_profile, l_start, l_end, delta_bin, const_binWidth=0):
+        # propagator:     a hamiltonian propagator
+        # matterHam:      function of the potential to be fed to the propagator
+        # ne_profile:      a function of electron number density to feed to the matter Hamiltonian
+        # l_start, l_end: boundaries for the potential method
+        # delta_bin:      the bins need not be the same width. Here we allow a maximum
+        #                 variation of the potential per bin.
+        # const_binwidth  If non_zero, set the bin width to a constant. Useful when functions are
+        #                 very quickly varying
+
+        self.propagator = propagator
+        self.ne_profile = ne_profile
+        self.matterH = matterHam
+        self.bounds = np.array([l_start, l_end])
+        self.delta_bin = delta_bin
+        self.const_binwidth = const_binWidth
+
+        self.setBinnedPotential()
+
+
+    def setBinnedPotential(self):
+        # Get the propagation lengths and constant matter potential values for our bins
+        if self.const_binwidth != 0:
+            print('constant bin width specified:')
+            print('Electron density function will be evaluated at bin centre')
+            print('The last bin might be shorter than the rest')
+            nbins = np.floor((self.bounds[1] - self.bounds[0]) / self.const_binwidth)
+
+            # Check we have an appropriate number of bins
+            if nbins > 0:
+                print('There will be ' + str(nbins+1) + ' bins in our calculation')
+            else:
+                print('ERROR: Bin width is larger than given range. Please choose a smaller width')
+                return -1
+
+            # Get bin centres: - last bin is the remainder
+            self.binCentres = (np.arange(nbins + 1) + 0.5) * self.const_binwidth
+            self.binCentres[-1] = self.binCentres[-2] + 0.5 * (self.const_binwidth + self.bounds[1] - self.binCentres[-2])
+
+            # Bin widths is trivial
+            self.binWidths = np.ones(nbins + 1) * self.const_binwidth
+            self.binWidths[-1] = (self.bounds[1] - self.bounds[0]) - self.const_binwidth*nbins
+
+
+        else:
+            binEdges = np.array(split_range(self.ne_profile, self.delta_bin, self.bounds[0], self.bounds[1]))
+            self.binCentres = (binEdges[:-1] + binEdges[1:]) / 2
+            self.binWidths = np.diff(binEdges)
+
+        # Finally, get value of potential at each bin:
+        self.binned_ne_profile = np.vectorize(self.ne_profile)(self.binCentres)
+
+    def setTransitionAmplitude(self):
+        # Use a helper function to calculate the transition amplitude
+        # for each bin and then multiply together appropriately
+        # uses multiprocessing
+        with Pool() as pool:
+            args = [self.binned_ne_profile, self.binWidths]
+            results = pool.map(self.__transition_helper, args)
+
+        amp_product = reduce(np.matmul, results)
+        self.transitionAmplitude = amp_product.transpose()
+
+    def getProbs(self, alpha, beta):
+        P = np.abs(self.transitionAmplitude[alpha, beta] * self.transitionAmplitude[alpha, beta].conjugate())
+        return P
+
+    def __transition_helper(self, n_e, L):
+        # This function calculates the transition matrix for a uniform potential
+        matterPotential = self.matterH(n_e)
+
+        # create a copy of the propagator to parallelise and set values
+        temp_propagator = self.propagator
+        temp_propagator.L = L
+        temp_propagator.newHam = matterPotential
+        temp_propagator.update()
+        size = temp_propagator.generations
+
+        amplitudes = np.zeros((size, size))
+        for i in range(size):
+            for j in range(size):
+                amplitudes[i, j] = temp_propagator.getOsc(i, j)
+
+        return(amplitudes)
