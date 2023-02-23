@@ -136,7 +136,7 @@ class HamiltonianPropagator:
             self.hamiltonian = self.vHam + self.newHam
 
     # propagate according to the plane wave solution of the hamiltonian
-    def getOsc(self, alpha, beta, antineutrino=False):
+    def getAmps(self, alpha, beta, antineutrino=False):
         V1 = self.mixingMatrix
         P = complex(0, 0)
 
@@ -149,6 +149,9 @@ class HamiltonianPropagator:
                 phase = self.eigenvals[i] * self.L * 1.27 * 2
                 P += V1[alpha, i] * V1[beta, i].conjugate() * np.exp(-phase * 2j)
 
+        return P
+    def getOsc(self, alpha, beta, antineutrino=False):
+        P = self.getAmps(alpha, beta, antineutrino)
         pOsc = np.abs(P) ** 2
         return pOsc
 
@@ -212,22 +215,27 @@ def extractMixingAngles(mixMatrix):
     return np.array([np.sin(th12)**2, np.sin(th23)**2, np.sin(th13)**2, dcp])
 
 # A recursive function for finding an "optimal" binning in the approximation to a varying matter potential
-def split_range(func, max_change, start, end):
+def split_range(func, max_change, start, end, start0, end0):
     # Calculate the maximum absolute value of the derivative within the range
     # We need to make some guesses about how many bins we want.
     # Getting the derivative at many points might slow down everytihng
-    points = np.linspace(start, end, 20)
-    derivative = np.gradient(func(points), points)
+    points = np.linspace(start, end, 100)
+    derivative = np.gradient(func(points), points) * (end - start)
     max_derivative = np.amax(np.abs(derivative))
 
+
     # If the maximum derivative is less than or equal to max_change, return the range as a single bin
+    # We hardcode a maximum of bins:
+    if end-start < (end0-start0) / 2000:
+        print('WARNING: potential is very steep. Minimum bin width reached.')
+        return [(start, end)]
     if max_derivative <= max_change:
         return [(start, end)]
     # Otherwise, split the range into two sub-ranges and recursively split each sub-range
     else:
         mid = (start + end) / 2
-        left_bins = split_range(func, max_change, start, mid)
-        right_bins = split_range(func, max_change, mid, end)
+        left_bins = split_range(func, max_change, start, mid, start0, end0)
+        right_bins = split_range(func, max_change, mid, end, start0, end0)
         return left_bins + right_bins
 
 class VaryingPotentialSolver():
@@ -259,7 +267,7 @@ class VaryingPotentialSolver():
             print('constant bin width specified:')
             print('Electron density function will be evaluated at bin centre')
             print('The last bin might be shorter than the rest')
-            nbins = np.floor((self.bounds[1] - self.bounds[0]) / self.const_binwidth)
+            nbins = int((self.bounds[1] - self.bounds[0]) / self.const_binwidth)
 
             # Check we have an appropriate number of bins
             if nbins > 0:
@@ -278,27 +286,12 @@ class VaryingPotentialSolver():
 
 
         else:
-            binEdges = np.array(split_range(self.ne_profile, self.delta_bin, self.bounds[0], self.bounds[1]))
-            self.binCentres = (binEdges[:-1] + binEdges[1:]) / 2
-            self.binWidths = np.diff(binEdges)
+            binEdges = np.array(split_range(self.ne_profile, self.delta_bin, self.bounds[0], self.bounds[1], self.bounds[0], self.bounds[1]))
+            self.binCentres = np.mean(binEdges, axis=1)
+            self.binWidths = np.diff(binEdges, axis=1)[:, 0]
 
         # Finally, get value of potential at each bin:
         self.binned_ne_profile = np.vectorize(self.ne_profile)(self.binCentres)
-
-    def setTransitionAmplitude(self):
-        # Use a helper function to calculate the transition amplitude
-        # for each bin and then multiply together appropriately
-        # uses multiprocessing
-        with Pool() as pool:
-            args = [self.binned_ne_profile, self.binWidths]
-            results = pool.map(self.__transition_helper, args)
-
-        amp_product = reduce(np.matmul, results)
-        self.transitionAmplitude = amp_product.transpose()
-
-    def getProbs(self, alpha, beta):
-        P = np.abs(self.transitionAmplitude[alpha, beta] * self.transitionAmplitude[alpha, beta].conjugate())
-        return P
 
     def __transition_helper(self, n_e, L):
         # This function calculates the transition matrix for a uniform potential
@@ -311,9 +304,34 @@ class VaryingPotentialSolver():
         temp_propagator.update()
         size = temp_propagator.generations
 
-        amplitudes = np.zeros((size, size))
+        amplitudes = np.zeros((size, size), dtype=complex)
         for i in range(size):
             for j in range(size):
-                amplitudes[i, j] = temp_propagator.getOsc(i, j)
+                amplitudes[i, j] = temp_propagator.getAmps(i, j)
 
         return(amplitudes)
+
+    def transition_helper_wrapper(self, args):
+        # Unpack the arguments and call the original function
+        return self.__transition_helper(*args)
+
+    def setTransitionAmplitude(self):
+        # Use a helper function to calculate the transition amplitude
+        # for each bin and then multiply together appropriately
+        # uses multiprocessing
+        with Pool() as pool:
+            args = [(self.binned_ne_profile[i], self.binWidths[i]) for i in range(len(self.binned_ne_profile))]
+            results = pool.map(self.transition_helper_wrapper, args)
+
+        amp_product = reduce(np.matmul, results)
+        self.transitionAmplitude = amp_product.transpose()
+
+    # getter function
+    def getTransitionAmplitude(self):
+        return self.transitionAmplitude
+
+    def getProbs(self, alpha, beta):
+        P = np.abs(self.transitionAmplitude[alpha, beta] * self.transitionAmplitude[alpha, beta].conjugate())
+        return P
+
+
