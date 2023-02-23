@@ -34,7 +34,7 @@ ne_profile = solar_density
 
 
 max_change = float(sys.argv[4])
-savefile = float(sys.argv[5])
+savefile = sys.argv[5]
 
 solver = customPropagator.VaryingPotentialSolver(prop, matterHam,
                                                  ne_profile, 0, 696340,
