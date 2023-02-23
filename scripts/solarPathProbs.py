@@ -2,13 +2,9 @@ import sys
 sys.path.append('../')
 import numpy as np
 from HamiltonianSolver import customPropagator
-import matplotlib
-matplotlib.use('Qt5Agg')
-import matplotlib.pyplot as plt
-from PyQt5.QtCore import QTimer
-from PyQt5 import QtCore
 from tqdm import tqdm
-from graphing import  plotting
+
+
 # Solar electron number density
 def solar_density(l):
     solar_radius = 696340
