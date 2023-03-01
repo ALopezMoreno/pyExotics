@@ -171,11 +171,12 @@ def get_shifts_helper(bPropagator, matterH, energies, weights, l, myRange, sinMo
     for propagator in props:
         print(propagator.mixingPars)
         print(propagator.newHam)
+        print(propagator.E)
     for i in range(npoints):
         for propagator in props:
             propagator.mixingPars[3] = inputs[i]
             propagator.update()
-        
+
         for k in range(4):
             probabilities[k] = props[k].getOsc(1, 0)
 
