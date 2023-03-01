@@ -203,6 +203,7 @@ def main():
     print('Save file will be ' + savefile)
     print('Running in sin(dcp) = ' + str(sinMode.sinMode))
     print('Mixing pars are ' + str(pars))
+    print('Number of Energy Bins: ' + str(len(energies)))
     print('We are not considering changes in the mass differences here')
     print('************************************************************')
 
