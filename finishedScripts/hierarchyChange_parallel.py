@@ -145,10 +145,10 @@ def get_shifts_parallel(matterH, th12, th23, th13, dcp, energies, weights, l, my
 
     return avg_shifts_NH, avg_shifts_IH
 
-def get_shifts_helper(propagator, matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs):
+def get_shifts_helper(bPropagator, matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs):
 
     # work with a copy of the input object:
-    base_prop = propagator
+    base_prop = bPropagator
     base_prop.new_ham = matterH
     base_prop.L = l
     base_prop.E = energies[j]
@@ -195,7 +195,7 @@ def main():
         pars[0] = np.random.uniform(0, 1)
         pars[1] = np.random.uniform(0, 1)
         pars[2] = np.random.uniform(0, 1)
-    
+
     th12 = np.arcsin(np.sqrt(pars[0]))
     th23 = np.arcsin(np.sqrt(pars[1]))
     th13 = np.arcsin(np.sqrt(pars[2]))
