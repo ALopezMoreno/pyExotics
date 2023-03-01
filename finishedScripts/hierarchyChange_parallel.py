@@ -10,9 +10,35 @@ import time
 # saves to file "savefile"
 # -------------------------------------------------------------------------------------------------------------------------#
 
-# SHOULD BE USED AS: python hierarchyChange_GPU.py spectrumFileName.txt electronDensity baseline savefile.txt (optional sindcp)
+# SHOULD BE USED AS: python hierarchyChange_parallel.py configFile.cfg
+
+# spectrumFileName.txt electronDensity baseline savefile.txt (optional sindcp)
 
 # -------------------------------------------------------------------------------------------------------------------------#
+def read_config(filename):
+    baseline = 0
+    n_e = 0
+    e_filename = ''
+    savefile = ''
+    sin_mode = False
+    mixing_parameters = np.array([0.307, 0.561, 0.0220, 7.53e-5, 2.494e-3, -1.601])
+
+    with open(filename, "r") as f:
+        for line in f:
+            if line.startswith("BASELINE:"):
+                baseline = line.strip()[9:]
+            elif line.startswith("E_DENSITY:"):
+                n_e = line.strip()[10:]
+            elif line.startswith("FLUXFILE:"):
+                e_filename = line.strip()[9:]
+            elif line.startswith("OUTPUT:"):
+                savefile = line.strip()[7:]
+            elif line.startswith("SIN_DCP:"):
+                sin_mode = True if line.strip()[8:].strip().lower() == "true" else False
+            elif line.startswith("MIXPARS:"):
+                mixing_parameters = line.strip()[8:]
+
+    return float(baseline), float(n_e), e_filename, savefile, sin_mode, np.array(mixing_parameters)
 def get_shifts_helper_wrapper(args):
     # Unpack the arguments and call the original function
     return get_shifts_helper(*args)
@@ -43,11 +69,12 @@ class IsSin():
 
 
 # function optimized to run in parallel. Calculates the shifts
-def get_shifts_parallel(matterH, energies, weights, l, myRange, sinMode, npoints):
+def get_shifts_parallel(matterH, th12, th23, th13, dcp, energies, weights, l, myRange, sinMode, npoints):
     # Calculates the necessary dcp(or sindcp) shifts for given energies
     # Assumes remaining parameters are in asimov A
     dcps = np.linspace(myRange[0], myRange[1], npoints)
     prop = customPropagator.HamiltonianPropagator(matterH, l, 1)
+    prop.mixingPars = [th12, th13, th23, dcp]
 
     # Remove NaNs and normalise weighs
     weights[np.isnan(weights)] = 1.0
@@ -154,16 +181,20 @@ def get_shifts_helper(propagator, matterH, energies, weights, l, myRange, sinMod
 
 def main():
     sinMode = IsSin()
-    e_filename = sys.argv[1]  # Array containing the energies and their respective weighs
-    n_e = float(sys.argv[2])  # Electron number density
-    l = float(sys.argv[3])  # Baseline
-    savefile = sys.argv[4]
+
+    l, n_e, e_filename, savefile, sin_mode, pars = read_config(sys.argv[1])
+
+    th12 = np.arcsin(np.sqrt(pars[0]))
+    th23 = np.arcsin(np.sqrt(pars[1]))
+    th13 = np.arcsin(np.sqrt(pars[2]))
+    dm12 = pars[3]
+    dm23 = pars[4]
+    dcp = pars[5]
 
     energies, weights = load_spectrum(e_filename)
 
     # Check if we are running in sine mode:
-    if len(sys.argv) == 6:
-        sinMode.setSin(True)
+    sinMode.setSin(sin_mode)
 
     print('************************************************************')
     print('Spectrum file = ' + e_filename)
@@ -171,6 +202,8 @@ def main():
     print('Baseline = ' + str(l))
     print('Save file will be ' + savefile)
     print('Running in sin(dcp) = ' + str(sinMode.sinMode))
+    print('Mixing pars are ' + str(pars))
+    print('We are not considering changes in the mass differences here')
     print('************************************************************')
 
     if sinMode.sinMode:
@@ -179,13 +212,14 @@ def main():
         myRange = np.array([-np.pi + 0.0001, np.pi - 0.0001])
 
     # Number of points you want to calculate the shifts at
-    npoints = 100 # look for prime numbers and combine
+    npoints = 100 # look for prime numbers and combine?
 
     # Set the matter effect's contribution to the Hamiltonian
     matterH = customPropagator.matterHamiltonian(n_e, 3)
 
     # Get shifts (GPU function)
     normal_hierarchy, inverse_hierarchy = get_shifts_parallel(matterH,
+                                                     th12, th23, th13, dcp,
                                                      energies,
                                                      weights,
                                                      l,
