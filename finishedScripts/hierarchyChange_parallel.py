@@ -44,7 +44,7 @@ def get_shifts_helper_wrapper(args):
     return get_shifts_helper(*args)
 
 def load_spectrum(filename):
-    data = np.loadtxt(filename, dtype=np.float, ndmin=2)
+    data = np.loadtxt(filename, dtype=float, ndmin=2)
     num_cols = data.shape[1]
 
     if num_cols == 2:
