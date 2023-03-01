@@ -168,11 +168,14 @@ def get_shifts_helper(bPropagator, matterH, energies, weights, l, myRange, sinMo
     vals = np.zeros((npoints, 2))
     #start_time = time.time()
     # Loop through dcp
+    for propagator in props:
+        print(propagator.mixingPars)
+        print(propagator.newHam)
     for i in range(npoints):
         for propagator in props:
             propagator.mixingPars[3] = inputs[i]
             propagator.update()
-
+        
         for k in range(4):
             probabilities[k] = props[k].getOsc(1, 0)
 
