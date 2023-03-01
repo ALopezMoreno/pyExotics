@@ -47,6 +47,7 @@ def get_shifts_parallel(matterH, energies, weights, l, myRange, sinMode, npoints
     # Calculates the necessary dcp(or sindcp) shifts for given energies
     # Assumes remaining parameters are in asimov A
     dcps = np.linspace(myRange[0], myRange[1], npoints)
+    prop = customPropagator.HamiltonianPropagator(matterH, l, 1)
 
     # Remove NaNs and normalise weighs
     weights[np.isnan(weights)] = 1.0
@@ -65,7 +66,7 @@ def get_shifts_parallel(matterH, energies, weights, l, myRange, sinMode, npoints
     print("starting parallelism")
     with Pool() as pool:
         # Create a list of argument tuples
-        args_list = [(matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs) for j in range(len(energies))]
+        args_list = [(prop, matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs) for j in range(len(energies))]
         # Map the function to the arguments using the pool of worker processes
         results = pool.map(get_shifts_helper_wrapper, args_list)
 
@@ -110,13 +111,18 @@ def get_shifts_parallel(matterH, energies, weights, l, myRange, sinMode, npoints
 
     return avg_shifts_NH, avg_shifts_IH
 
-def get_shifts_helper(matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs):
+def get_shifts_helper(propagator, matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs):
 
-    # Set propagators to invertse and normal hierarchies, nu and nubar
-    prop_NH_nu = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
-    prop_IH_nu = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
-    prop_NH_nub = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
-    prop_IH_nub = customPropagator.HamiltonianPropagator(matterH, l, energies[j])
+    # work with a copy of the input object:
+    base_prop = propagator
+    base_prop.new_ham = matterH
+    base_prop.L = l
+    base_prop.E = energies[j]
+    # Set propagators to inverse and normal hierarchies, nu and nubar
+    prop_NH_nu = base_prop
+    prop_IH_nu = base_prop
+    prop_NH_nub = base_prop
+    prop_IH_nub = base_prop
 
     prop_IH_nu.IH = True
     prop_IH_nub.IH = True
@@ -173,7 +179,7 @@ def main():
         myRange = np.array([-np.pi + 0.0001, np.pi - 0.0001])
 
     # Number of points you want to calculate the shifts at
-    npoints = 7919 # look for prime numbers and combine
+    npoints = 100 # look for prime numbers and combine
 
     # Set the matter effect's contribution to the Hamiltonian
     matterH = customPropagator.matterHamiltonian(n_e, 3)
