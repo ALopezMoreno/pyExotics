@@ -36,10 +36,14 @@ def read_config(filename):
             elif line.startswith("SIN_DCP:"):
                 sin_mode = True if line.strip()[8:].strip().lower() == "true" else False
             elif line.startswith("MIXPARS:"):
-                mixing_parameters = line.strip()[8:]
+                rawpars = line.strip()[8:]
+                # Remove square brackets and whitespace
+                clean_str = rawpars.replace("[", "").replace("]", "").strip()
 
-    print(mixing_parameters)
-    return float(baseline), float(n_e), e_filename, savefile, sin_mode, np.array(mixing_parameters, dtype=float)
+                # Split string and convert to floats
+                mixing_parameters = [float(x) for x in clean_str.split(",")]
+
+    return float(baseline), float(n_e), e_filename, savefile, sin_mode, np.array(mixing_parameters)
 def get_shifts_helper_wrapper(args):
     # Unpack the arguments and call the original function
     return get_shifts_helper(*args)
