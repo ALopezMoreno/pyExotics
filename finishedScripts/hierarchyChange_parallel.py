@@ -1,4 +1,5 @@
 import sys
+import copy
 sys.path.append('../')
 import numpy as np
 from HamiltonianSolver import customPropagator
@@ -146,15 +147,13 @@ def get_shifts_parallel(matterH, th12, th23, th13, dcp, energies, weights, l, my
 def get_shifts_helper(bPropagator, matterH, energies, weights, l, myRange, sinMode, npoints, j, inputs):
 
     # work with a copy of the input object:
-    base_prop = bPropagator
-    #base_prop.newHam = matterH
-    base_prop.L = l
+    base_prop = copy.deepcopy(bPropagator)
     base_prop.E = energies[j]
     # Set propagators to inverse and normal hierarchies, nu and nubar
-    prop_NH_nu = base_prop
-    prop_IH_nu = base_prop
-    prop_NH_nub = base_prop
-    prop_IH_nub = base_prop
+    prop_NH_nu = copy.deepcopy(base_prop)
+    prop_IH_nu = copy.deepcopy(base_prop)
+    prop_NH_nub = copy.deepcopy(base_prop)
+    prop_IH_nub = copy.deepcopy(base_prop)
 
     prop_IH_nu.IH = True
     prop_IH_nub.IH = True

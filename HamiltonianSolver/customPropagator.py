@@ -7,6 +7,7 @@ import numpy as np
 from math import comb
 from functools import reduce
 from multiprocessing import Pool
+import copy
 
 class HamiltonianPropagator:
 
@@ -140,19 +141,15 @@ class HamiltonianPropagator:
         V1 = self.mixingMatrix
         P = complex(0, 0)
 
-        if self.antinu:
-            for i in range(self.generations):
-                phase = self.eigenvals[i] * self.L * 1.27 * 2
-                P += V1[alpha, i].conjugate() * V1[beta, i] * np.exp(-phase * 2j)
-        else:
-            for i in range(self.generations):
-                phase = self.eigenvals[i] * self.L * 1.27 * 2
-                P += V1[alpha, i] * V1[beta, i].conjugate() * np.exp(-phase * 2j)
+        for i in range(self.generations):
+            phase = self.eigenvals[i] * self.L * 1.27 * 2
+            P += V1[alpha, i].conjugate() * V1[beta, i] * np.exp(-phase * 2j)
 
         return P
+
     def getOsc(self, alpha, beta):
         P = self.getAmps(alpha, beta)
-        pOsc = np.abs(P * P.conjugate())
+        pOsc = np.abs(P)**2
         return pOsc
 
     # Function to update hamiltonian if any input parameters are changed
@@ -298,7 +295,7 @@ class VaryingPotentialSolver():
         matterPotential = self.matterH(n_e)
 
         # create a copy of the propagator to parallelise and set values
-        temp_propagator = self.propagator
+        temp_propagator = copy.deepcopy(self.propagator)
         temp_propagator.L = L
         temp_propagator.newHam = matterPotential
         temp_propagator.update()
