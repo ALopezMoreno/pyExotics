@@ -147,7 +147,7 @@ def get_shifts_helper(bPropagator, matterH, energies, weights, l, myRange, sinMo
 
     # work with a copy of the input object:
     base_prop = bPropagator
-    base_prop.newHam = matterH
+    #base_prop.newHam = matterH
     base_prop.L = l
     base_prop.E = energies[j]
     # Set propagators to inverse and normal hierarchies, nu and nubar
