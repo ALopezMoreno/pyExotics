@@ -152,7 +152,7 @@ class HamiltonianPropagator:
         return P
     def getOsc(self, alpha, beta, antineutrino=False):
         P = self.getAmps(alpha, beta, antineutrino)
-        pOsc = np.abs(P) ** 2
+        pOsc = np.abs(P * P.conjugate())
         return pOsc
 
     # Function to update hamiltonian if any input parameters are changed
