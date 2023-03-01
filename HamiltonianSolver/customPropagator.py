@@ -136,11 +136,11 @@ class HamiltonianPropagator:
             self.hamiltonian = self.vHam + self.newHam
 
     # propagate according to the plane wave solution of the hamiltonian
-    def getAmps(self, alpha, beta, antineutrino=False):
+    def getAmps(self, alpha, beta):
         V1 = self.mixingMatrix
         P = complex(0, 0)
 
-        if antineutrino:
+        if self.antinu:
             for i in range(self.generations):
                 phase = self.eigenvals[i] * self.L * 1.27 * 2
                 P += V1[alpha, i].conjugate() * V1[beta, i] * np.exp(-phase * 2j)
@@ -150,8 +150,8 @@ class HamiltonianPropagator:
                 P += V1[alpha, i] * V1[beta, i].conjugate() * np.exp(-phase * 2j)
 
         return P
-    def getOsc(self, alpha, beta, antineutrino=False):
-        P = self.getAmps(alpha, beta, antineutrino)
+    def getOsc(self, alpha, beta):
+        P = self.getAmps(alpha, beta)
         pOsc = np.abs(P * P.conjugate())
         return pOsc
 
