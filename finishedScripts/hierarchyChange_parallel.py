@@ -10,9 +10,7 @@ import time
 # saves to file "savefile"
 # -------------------------------------------------------------------------------------------------------------------------#
 
-# SHOULD BE USED AS: python hierarchyChange_parallel.py configFile.cfg
-
-# spectrumFileName.txt electronDensity baseline savefile.txt (optional sindcp)
+# SHOULD BE USED AS: python hierarchyChange_parallel.py configFile.cfg Npoints
 
 # -------------------------------------------------------------------------------------------------------------------------#
 def read_config(filename):
@@ -32,7 +30,7 @@ def read_config(filename):
             elif line.startswith("FLUXFILE:"):
                 e_filename = line.strip()[9:].strip()
             elif line.startswith("OUTPUT:"):
-                savefile = line.strip()[7:]
+                savefile = line.strip()[7:].strip()
             elif line.startswith("SIN_DCP:"):
                 sin_mode = True if line.strip()[8:].strip().lower() == "true" else False
             elif line.startswith("MIXPARS:"):
@@ -166,7 +164,7 @@ def get_shifts_helper(propagator, matterH, energies, weights, l, myRange, sinMod
     probabilities = np.zeros(4)
 
     vals = np.zeros((npoints, 2))
-    start_time = time.time()
+    #start_time = time.time()
     # Loop through dcp
     for i in range(npoints):
         for propagator in props:
@@ -178,13 +176,14 @@ def get_shifts_helper(propagator, matterH, energies, weights, l, myRange, sinMod
 
         vals[i, 0] = probabilities[0] - probabilities[1]
         vals[i, 1] = probabilities[2] - probabilities[3]
-        if i % 10 == 0:
-            print("iteration no. "+str(i)+". We have been running for " + str(int(time.time() - start_time)) + " seconds")
+        #if i % 10 == 0:
+        #    print("iteration no. "+str(i)+". We have been running for " + str(int(time.time() - start_time)) + " seconds")
 
     return j, vals[: ,0], vals[:, 1]
 
 
 def main():
+    start_time = time.time()
     sinMode = IsSin()
 
     l, n_e, e_filename, savefile, sin_mode, pars = read_config(sys.argv[1])
@@ -210,7 +209,7 @@ def main():
     print('Mixing pars are ' + str(pars))
     print('Number of Energy Bins: ' + str(len(energies)))
     print('We are not considering changes in the mass differences here')
-    print('************************************************************')
+    print('*************************************************************')
 
     if sinMode.sinMode:
         myRange = np.array([-1 + 0.0001, 1 - 0.0001])
@@ -218,7 +217,7 @@ def main():
         myRange = np.array([-np.pi + 0.0001, np.pi - 0.0001])
 
     # Number of points you want to calculate the shifts at
-    npoints = 100 # look for prime numbers and combine?
+    npoints = int(sys.argv[2]) # look for prime numbers and combine?
 
     # Set the matter effect's contribution to the Hamiltonian
     matterH = customPropagator.matterHamiltonian(n_e, 3)
@@ -236,7 +235,7 @@ def main():
     dcps = np.linspace(myRange[0], myRange[1], npoints)
     data = np.column_stack((dcps, normal_hierarchy, inverse_hierarchy))
     np.savetxt(savefile, data, delimiter="\t", fmt='%.9f')
-
+    print('calculated ' + str(npoints) + ' points in {:.2f} seconds'.format(time.time()-start_time) )
 
 if __name__ == '__main__':
     main()
