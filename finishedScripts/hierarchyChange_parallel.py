@@ -38,7 +38,8 @@ def read_config(filename):
             elif line.startswith("MIXPARS:"):
                 mixing_parameters = line.strip()[8:]
 
-    return float(baseline), float(n_e), e_filename, savefile, sin_mode, np.array(mixing_parameters)
+    print(mixing_parameters)
+    return float(baseline), float(n_e), e_filename, savefile, sin_mode, np.array(mixing_parameters, dtype=float)
 def get_shifts_helper_wrapper(args):
     # Unpack the arguments and call the original function
     return get_shifts_helper(*args)
