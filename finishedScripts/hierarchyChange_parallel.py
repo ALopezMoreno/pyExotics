@@ -168,10 +168,7 @@ def get_shifts_helper(bPropagator, matterH, energies, weights, l, myRange, sinMo
     vals = np.zeros((npoints, 2))
     #start_time = time.time()
     # Loop through dcp
-    for propagator in props:
-        print(propagator.mixingPars)
-        print(propagator.newHam)
-        print(propagator.E)
+
     for i in range(npoints):
         for propagator in props:
             propagator.mixingPars[3] = inputs[i]
@@ -185,7 +182,7 @@ def get_shifts_helper(bPropagator, matterH, energies, weights, l, myRange, sinMo
         #if i % 10 == 0:
         #    print("iteration no. "+str(i)+". We have been running for " + str(int(time.time() - start_time)) + " seconds")
 
-    return j, vals[: ,0], vals[:, 1]
+    return j, vals[:, 0], vals[:, 1]
 
 
 def main():
