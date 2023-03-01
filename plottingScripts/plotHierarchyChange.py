@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from graphing import plotting
 import numpy as np
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
-
+import os
 
 def load_data(filename):
     data = np.loadtxt(filename)
@@ -13,11 +13,23 @@ def load_data(filename):
     shifts2 = data[:, 2]
     return dcps, shifts1, shifts2
 
+def list_files(directory):
+    """Returns a list of the names of every file in the given directory."""
+    return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+
+
 def main():
     #  Usage: python PlotHierarchyChange.py inputFile.txt outputFile.png
+    #  if a third option is added, take that as a directory and plot
+
     inputFile = sys.argv[1]
     outputFile = sys.argv[2]
+    inputDir = 0
+    files = 0
 
+    if len(sys.argv) > 3:
+        inputDir = sys.argv[3]
+        files = list_files(inputDir)
 
     dcps, shift1, shift2 = load_data(inputFile)
 
@@ -59,7 +71,6 @@ def main():
     argB = shift2[np.where(mindeltasB < 0.01)]
     Bx = np.zeros(len(argB))
 
-
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
     plotting.niceLinPlot(ax, dcps, shift2, logx=False, logy=False, color='b',
@@ -68,6 +79,15 @@ def main():
     ax.tick_params(which='both', top=True, right=True)
     plt.plot(-1.602*Ax, argA, linestyle="", marker='o', color='goldenrod')
     plt.plot(Bx, argB, linestyle="", marker='o', color='lightseagreen')
+
+    if inputDir:
+        for data in files:
+            print(inputDir+'/'+data)
+            dcps, shift1, shift2 = load_data(inputDir+'/'+data)
+            plotting.niceLinPlot(ax, dcps, shift1, logx=False, logy=False, color='r',
+                                 linestyle="", marker='o', markersize=0.8, alpha=0.5)
+            plotting.niceLinPlot(ax, dcps, shift2, logx=False, logy=False, color='b',
+                                 linestyle="", marker='o', markersize=0.8, alpha=0.5)
 
     plt.legend()
     plt.savefig('../images/' + outputFile)
