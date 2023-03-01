@@ -30,13 +30,13 @@ def read_config(filename):
             elif line.startswith("E_DENSITY:"):
                 n_e = line.strip()[10:]
             elif line.startswith("FLUXFILE:"):
-                e_filename = line.strip()[9:]
+                e_filename = line.strip()[9:].strip()
             elif line.startswith("OUTPUT:"):
                 savefile = line.strip()[7:]
             elif line.startswith("SIN_DCP:"):
                 sin_mode = True if line.strip()[8:].strip().lower() == "true" else False
             elif line.startswith("MIXPARS:"):
-                rawpars = line.strip()[8:]
+                rawpars = line.strip()[8:].strip()
                 # Remove square brackets and whitespace
                 clean_str = rawpars.replace("[", "").replace("]", "").strip()
 
