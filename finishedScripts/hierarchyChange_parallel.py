@@ -42,8 +42,10 @@ def read_config(filename):
 
                 # Split string and convert to floats
                 mixing_parameters = [float(x) for x in clean_str.split(",")]
+            elif line.startswith("RANDOM?:"):
+                randMix = True if line.strip()[8:].strip().lower() == "true" else False
 
-    return float(baseline), float(n_e), e_filename, savefile, sin_mode, np.array(mixing_parameters)
+    return float(baseline), float(n_e), e_filename, savefile, sin_mode, np.array(mixing_parameters), randMix
 def get_shifts_helper_wrapper(args):
     # Unpack the arguments and call the original function
     return get_shifts_helper(*args)
@@ -187,8 +189,13 @@ def get_shifts_helper(propagator, matterH, energies, weights, l, myRange, sinMod
 def main():
     sinMode = IsSin()
 
-    l, n_e, e_filename, savefile, sin_mode, pars = read_config(sys.argv[1])
+    l, n_e, e_filename, savefile, sin_mode, pars, randMix = read_config(sys.argv[1])
 
+    if randMix:
+        pars[0] = np.random.uniform(0, 1)
+        pars[1] = np.random.uniform(0, 1)
+        pars[2] = np.random.uniform(0, 1)
+    
     th12 = np.arcsin(np.sqrt(pars[0]))
     th23 = np.arcsin(np.sqrt(pars[1]))
     th13 = np.arcsin(np.sqrt(pars[2]))
