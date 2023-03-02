@@ -46,7 +46,7 @@ def read_config(filename):
             elif line.startswith("CONSTR?:"):
                 const_Mix = True if line.strip()[8:].strip().lower() == "true" else False
 
-    return float(baseline), float(n_e), e_filename, savefile, sin_mode, np.array(mixing_parameters), randMix
+    return float(baseline), float(n_e), e_filename, savefile, sin_mode, np.array(mixing_parameters), randMix, const_Mix
 def get_shifts_helper_wrapper(args):
     # Unpack the arguments and call the original function
     return get_shifts_helper(*args)
