@@ -291,7 +291,6 @@ class VaryingPotentialSolver():
         self.binned_ne_profile = np.vectorize(self.ne_profile)(self.binCentres)
 
     def __transition_helper(self, n_e, L):
-        print('we are doing something')
         # This function calculates the transition matrix for a uniform potential
         matterPotential = self.matterH(n_e)
 
@@ -306,7 +305,6 @@ class VaryingPotentialSolver():
         for i in range(size):
             for j in range(size):
                 amplitudes[i, j] = temp_propagator.getAmps(i, j)
-        print('we finished that something')
         return(amplitudes)
 
     def transition_helper_wrapper(self, args):

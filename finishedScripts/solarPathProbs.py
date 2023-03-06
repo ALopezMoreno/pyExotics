@@ -45,20 +45,17 @@ def read_config(filename):
 
     return float(eMax), float(eMin), int(nPoints), float(maxChange), int(avg), savefile
 
-def getProbs_helper(mySolver, task_queue):
-    while True:
-        energy = task_queue.get()
-        if energy is None:
-            break
+def getProbs_helper(mySolver, task_queue, result_queue):
+    for energy in iter(task_queue.get, None):
         # Create copy of object
         solver = copy.deepcopy(mySolver)
         # Assign energies
         solver.propagator.E = energy
         # Calculate transition amplitude inside the sun
         solver.setTransitionAmplitude()
+        output = solver.getProbs(0, 0)
+        result_queue.put(output)
         task_queue.task_done()
-        return solver.getProbs(0, 0)
-
 
 def main():
     # HARDCODED!!
@@ -87,6 +84,8 @@ def main():
     max_simultaneous_processes = int(multiprocessing.cpu_count() / len(solver.binCentres))
     num_processes = len(energies)
     task_queue = multiprocessing.JoinableQueue()
+    result_queue = multiprocessing.Queue()
+
     for i in energies:
         task_queue.put(i)
 
@@ -121,6 +120,7 @@ def main():
             ens = np.random.normal(E, E/10, avg)
 
         processes = []
+        results = []
         for j in range(max_simultaneous_processes):
             p = multiprocessing.Process(target=getProbs_helper, args=[solver, task_queue])
             p.start()
@@ -136,7 +136,10 @@ def main():
         for p in processes:
             p.join()
 
-        probs[i] = np.sum(p) / len(ens)
+        while not result_queue.empty():
+            results.append(result_queue.get())
+
+        probs[i] = np.sum(results) / len(ens)
 
     data = np.column_stack((energies, probs))
     np.savetxt(savefile, data, delimiter="\t", fmt='%.9f')
