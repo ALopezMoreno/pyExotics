@@ -46,7 +46,9 @@ def read_config(filename):
     return float(eMax), float(eMin), int(nPoints), float(maxChange), int(avg), savefile
 
 def getProbs_helper(mySolver, task_queue, result_queue):
+    print('starting queue shenanigans')
     for energy in iter(task_queue.get, None):
+        print('starting subtask')
         # Create copy of object
         solver = copy.deepcopy(mySolver)
         # Assign energies
@@ -56,6 +58,7 @@ def getProbs_helper(mySolver, task_queue, result_queue):
         output = solver.getProbs(0, 0)
         result_queue.put(output)
         task_queue.task_done()
+        print('ending subtask')
 
 def main():
     # HARDCODED!!
