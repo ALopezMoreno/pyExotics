@@ -2,6 +2,8 @@ import sys
 sys.path.append('../')
 import numpy as np
 from HamiltonianSolver import customPropagator
+import multiprocessing
+import copy
 from tqdm import tqdm
 
 # Propagate neutrino oscillations through a potential like that of the sun
@@ -43,7 +45,14 @@ def read_config(filename):
 
     return float(eMax), float(eMin), int(nPoints), float(maxChange), int(avg), savefile
 
-
+def getProbs_helper(energy, mySolver):
+    # Create copy of object
+    solver = copy.deepcopy(mySolver)
+    # Assign energies
+    solver.propagator.E = energy
+    # Calculate transition amplitude inside the sun
+    solver.setTransitionAmplitude()
+    return solver.getProbs(0, 0)
 
 def main():
     # HARDCODED!!
@@ -98,21 +107,16 @@ def main():
             ens = np.asarray([E])
         else:
             ens = np.random.uniform(E*0.9, E*1.1, avg)
-            
-        temp_probs = 0
-        for energy in ens:
-            # Assign energies
-            solver.propagator.E = energy
-            # Calculate transition amplitude inside the sun
-            solver.setTransitionAmplitude()
-            temp_probs += solver.getProbs(0, 0)
-        # Average over energy range
-        probs[i] = temp_probs / len(ens)
+
+        num_processes = multiprocessing.cpu_count() // len(solver.binCentres - 1)
+
+        with multiprocessing.Pool(processes=num_processes) as pool:
+            results = pool.map(getProbs_helper, [[arg, solver] for arg in ens])
+
+        probs[i] = np.sum(results) / len(ens)
 
     data = np.column_stack((energies, probs))
     np.savetxt(savefile, data, delimiter="\t", fmt='%.9f')
-
-
 
 if __name__ == '__main__':
     main()

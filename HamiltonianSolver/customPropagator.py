@@ -316,7 +316,7 @@ class VaryingPotentialSolver():
         # Use a helper function to calculate the transition amplitude
         # for each bin and then multiply together appropriately
         # uses multiprocessing
-        with Pool() as pool:
+        with Pool(processes=len(self.binCentres)) as pool:
             args = [(self.binned_ne_profile[i], self.binWidths[i]) for i in range(len(self.binned_ne_profile))]
             results = pool.map(self.transition_helper_wrapper, args)
 
