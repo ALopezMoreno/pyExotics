@@ -106,7 +106,20 @@ def main():
         if avg == 0 or avg == 1:
             ens = np.asarray([E])
         else:
+<<<<<<< HEAD
             ens = np.random.uniform(E*0.9, E*1.1, avg)
+=======
+            ens = np.random.normal(E, E/10, avg)
+        temp_probs = 0
+        for energy in ens:
+            # Assign energies
+            solver.propagator.E = energy
+            # Calculate transition amplitude inside the sun
+            solver.setTransitionAmplitude()
+            temp_probs += solver.getProbs(0, 0)
+        # Average over energy range
+        probs[i] = temp_probs / len(ens)
+>>>>>>> b3cba14480f43568c97527a5c0ab93d4a72c3916
 
         num_processes = multiprocessing.cpu_count() // len(solver.binCentres - 1)
 
