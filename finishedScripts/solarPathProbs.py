@@ -45,14 +45,19 @@ def read_config(filename):
 
     return float(eMax), float(eMin), int(nPoints), float(maxChange), int(avg), savefile
 
-def getProbs_helper(energy, mySolver):
-    # Create copy of object
-    solver = copy.deepcopy(mySolver)
-    # Assign energies
-    solver.propagator.E = energy
-    # Calculate transition amplitude inside the sun
-    solver.setTransitionAmplitude()
-    return solver.getProbs(0, 0)
+def getProbs_helper(energy, mySolver, task_queue):
+    while True:
+        task = task_queue.get()
+        # Create copy of object
+        solver = copy.deepcopy(mySolver)
+        # Assign energies
+        solver.propagator.E = energy
+        # Calculate transition amplitude inside the sun
+        solver.setTransitionAmplitude()
+        return solver.getProbs(0, 0)
+        if task is none:
+            break
+        task_queue.task_done()
 
 def main():
     # HARDCODED!!
@@ -76,6 +81,13 @@ def main():
     solver = customPropagator.VaryingPotentialSolver(prop, matterHam,
                                                      ne_profile, 0, 696340,
                                                      max_change)
+
+    # Set parallelism stuff
+    max_simultaneous_processes = int(multiprocessing.cpu_count() / len(solver.binCentres))
+    num_processes = len(energies)
+    task_queue = multiprocessing.JoinableQueue()
+    for i in range(num_processes):
+        task_queue.put(i)
 
     print('Resulting bins in Potential = ' + str(len(solver.binCentres)))
     probs = np.zeros(energyBin)
@@ -101,32 +113,29 @@ def main():
         print(vacuum_amp[0, 0])
         print(np.abs(vacuum_amp[0, 0] * vacuum_amp[0, 0].conjugate()))
 
-
     for i, E in tqdm(enumerate(energies*10**-3), total=len(energies)):
         if avg == 0 or avg == 1:
             ens = np.asarray([E])
         else:
-<<<<<<< HEAD
-            ens = np.random.uniform(E*0.9, E*1.1, avg)
-=======
             ens = np.random.normal(E, E/10, avg)
-        temp_probs = 0
-        for energy in ens:
-            # Assign energies
-            solver.propagator.E = energy
-            # Calculate transition amplitude inside the sun
-            solver.setTransitionAmplitude()
-            temp_probs += solver.getProbs(0, 0)
-        # Average over energy range
-        probs[i] = temp_probs / len(ens)
->>>>>>> b3cba14480f43568c97527a5c0ab93d4a72c3916
 
-        num_processes = multiprocessing.cpu_count() // len(solver.binCentres - 1)
+        processes = []
+        for j in range(max_simultaneous_processes):
+            p = multiprocessing.Process(target=getProbs_helper, args=[[arg, solver, task_queue] for arg in ens])
+            p.start()
+            processes.append(p)
 
-        with multiprocessing.Pool(processes=num_processes) as pool:
-            results = pool.map(getProbs_helper, [[arg, solver] for arg in ens])
+        # Wait for all tasks to be processed
+        task_queue.join()
 
-        probs[i] = np.sum(results) / len(ens)
+        # Stop worker processes
+        for j in range(max_simultaneous_processes):
+            task_queue.put(None)
+
+        for p in processes:
+            p.join()
+
+        probs[i] = np.sum(p) / len(ens)
 
     data = np.column_stack((energies, probs))
     np.savetxt(savefile, data, delimiter="\t", fmt='%.9f')
