@@ -97,8 +97,7 @@ def main():
         if avg == 0 or avg == 1:
             ens = np.asarray([E])
         else:
-            ens = np.random.uniform(E*0.9, E*1.1, avg)
-            
+            ens = np.random.normal(E, E/10, avg)
         temp_probs = 0
         for energy in ens:
             # Assign energies
