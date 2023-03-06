@@ -122,7 +122,7 @@ def main():
         processes = []
         results = []
         for j in range(max_simultaneous_processes):
-            p = multiprocessing.Process(target=getProbs_helper, args=[solver, task_queue])
+            p = multiprocessing.Process(target=getProbs_helper, args=[solver, task_queue, result_queue])
             p.start()
             processes.append(p)
 
