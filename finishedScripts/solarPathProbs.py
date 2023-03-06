@@ -98,7 +98,7 @@ def main():
             ens = np.asarray([E])
         else:
             ens = np.random.uniform(E*0.9, E*1.1, avg)
-        print(ens)
+            
         temp_probs = 0
         for energy in ens:
             # Assign energies
