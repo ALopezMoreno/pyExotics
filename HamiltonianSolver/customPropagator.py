@@ -6,7 +6,7 @@ import sympy
 import numpy as np
 from math import comb
 from functools import reduce
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 import copy
 
 class HamiltonianPropagator:
