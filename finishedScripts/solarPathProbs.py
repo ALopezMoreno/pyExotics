@@ -48,16 +48,17 @@ def read_config(filename):
 def getProbs_helper(mySolver, task_queue):
     while True:
         energy = task_queue.get()
+        if energy is None:
+            break
         # Create copy of object
         solver = copy.deepcopy(mySolver)
         # Assign energies
         solver.propagator.E = energy
         # Calculate transition amplitude inside the sun
         solver.setTransitionAmplitude()
-        return solver.getProbs(0, 0)
-        if task is none:
-            break
         task_queue.task_done()
+        return solver.getProbs(0, 0)
+
 
 def main():
     # HARDCODED!!
