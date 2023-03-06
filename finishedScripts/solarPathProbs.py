@@ -95,19 +95,19 @@ def main():
 
     for i, E in tqdm(enumerate(energies*10**-3), total=len(energies)):
         if avg == 0 or avg == 1:
-            energies = np.atleast_1d([E])
+            ens = np.atleast_1d([E])
         else:
-            energies = np.random.uniform(E*0.9, E*1.1, avg)
+            ens = np.random.uniform(E*0.9, E*1.1, avg)
 
         temp_probs = 0
-        for j, energy in energies:
+        for j, energy in ens:
             # Assign energies
             solver.propagator.E = energy
             # Calculate transition amplitude inside the sun
             solver.setTransitionAmplitude()
             temp_probs += solver.getProbs(0, 0)
         # Average over energy range
-        probs[i] = temp_probs / len(energies)
+        probs[i] = temp_probs / len(ens)
 
     data = np.column_stack((energies, probs))
     np.savetxt(savefile, data, delimiter="\t", fmt='%.9f')
