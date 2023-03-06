@@ -60,7 +60,7 @@ def main():
         crit_msw = energies[np.where(mindeltasB < 0.1)]
 
         # get averages (window_sizes must be an odd number)
-        window_size = 600#len(energies) // 20
+        window_size = len(energies) // 20
         if (window_size % 2) == 0:
             window_size += 1
 
@@ -77,8 +77,11 @@ def main():
         #  Make figure and plot grid
         fig, ax = plt.subplots(nrows=1, ncols=1, dpi=200)
         plt.grid(True, which="both", axis='x', linestyle='--', linewidth=0.8)
-        plotting.niceLinPlot(ax, energies, probs, logy=False, color='slategray', linewidth=1.5, label=r'$P_{ee}$', alpha=0.5)
-        plotting.niceLinPlot(ax, energies, probs_avg, logy=False, color='black', linewidth=1.5, label=r'$P_{avg}$')
+        #plotting.niceLinPlot(ax, energies, probs, logy=False, color='slategray', linewidth=1.5, label=r'$P_{ee}$',
+        #                     alpha=0.5)
+        plotting.niceLinPlot(ax, energies, probs, logy=False, color='black', markersize=1, label=r'$P_{ee}$',
+                             alpha=1, linestyle='', marker='o')
+        #plotting.niceLinPlot(ax, energies, probs_avg, logy=False, color='black', linewidth=1.5, label=r'$P_{avg}$')
         plotting.niceLinPlot(ax, energies, beta, logy=False, color='gold', linewidth=1.7, label=r'$\beta$')
 
         if len(crit_lma) and len(crit_msw):
