@@ -31,15 +31,20 @@ def main():
         inputDir = sys.argv[3]
         files = list_files(inputDir)
 
-    dcps, shift1, shift2 = load_data(inputFile)
-
     fig, ax = plt.subplots(nrows=1, ncols=1, dpi=400)
+    if inputDir:
+        for data in files:
+            print(inputDir+'/'+data)
+            dcps, shift1, shift2 = load_data(inputDir+'/'+data)
+            plotting.niceLinPlot(ax, dcps, shift1, logx=False, logy=False, color='lightcoral',
+                                 linestyle="", marker='o', markersize=1, alpha=1)
 
+    dcps, shift1, shift2 = load_data(inputFile)
     ax.set_xlim(-1*np.pi, 1*np.pi)
     ax.set_ylim(-1*np.pi, 1*np.pi)
     plt.ylabel(r'Shift')
     plt.xlabel(r'$\delta_{CP}$')
-    plt.title(r'Required shift to find degenerate point (HK)')
+    plt.title(r'Required shift to find degenerate point (HK, NH)')
 
     plt.axvline(x=-1.602, color='goldenrod', linewidth=1.5, label='Asimov A')
     plt.axvline(x=0, color='lightseagreen', linewidth=1.5, label='Asimov B')
@@ -73,6 +78,55 @@ def main():
 
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
+    ax.tick_params(which='both', direction="inout")
+    ax.tick_params(which='both', top=True, right=True)
+
+
+    plt.legend()
+    plt.savefig('../images/' + 'NH' + outputFile)
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, dpi=400)
+    if inputDir:
+        for data in files:
+            print(inputDir+'/'+data)
+            dcps, shift1, shift2 = load_data(inputDir+'/'+data)
+            plotting.niceLinPlot(ax, dcps, shift2, logx=False, logy=False, color='lightsteelblue',
+                                 linestyle="", marker='o', markersize=1, alpha=1)
+
+    dcps, shift1, shift2 = load_data(inputFile)
+    ax.set_xlim(-1*np.pi, 1*np.pi)
+    ax.set_ylim(-1*np.pi, 1*np.pi)
+    plt.ylabel(r'Shift')
+    plt.xlabel(r'$\delta_{CP}$')
+    plt.title(r'Required shift to find degenerate point (HK, IH)')
+
+    plt.axvline(x=-1.602, color='goldenrod', linewidth=1.5, label='Asimov A')
+    plt.axvline(x=0, color='lightseagreen', linewidth=1.5, label='Asimov B')
+
+    mindeltasA = np.absolute(dcps + 1.602)
+    mindeltasB = np.absolute(dcps)
+    argA = shift1[np.where(mindeltasA < 0.01)]
+    Ax = np.ones(len(argA))
+    argB = shift1[np.where(mindeltasB < 0.01)]
+    Bx = np.zeros(len(argB))
+
+    ax.tick_params(which='both', direction="inout")
+    ax.tick_params(which='both', top=True, right=True)
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+
+    mindeltasA = np.absolute(dcps + 1.602)
+    mindeltasB = np.absolute(dcps)
+    argA = shift2[np.where(mindeltasA < 0.01)]
+    print(argA)
+    Ax = np.ones(len(argA))
+    argB = shift2[np.where(mindeltasB < 0.01)]
+    Bx = np.zeros(len(argB))
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
     plotting.niceLinPlot(ax, dcps, shift2, logx=False, logy=False, color='b',
                          linestyle="", marker='o', markersize=1)
     ax.tick_params(which='both', direction="inout")
@@ -80,17 +134,9 @@ def main():
     plt.plot(-1.602*Ax, argA, linestyle="", marker='o', color='goldenrod')
     plt.plot(Bx, argB, linestyle="", marker='o', color='lightseagreen')
 
-    if inputDir:
-        for data in files:
-            print(inputDir+'/'+data)
-            dcps, shift1, shift2 = load_data(inputDir+'/'+data)
-            plotting.niceLinPlot(ax, dcps, shift1, logx=False, logy=False, color='r',
-                                 linestyle="", marker='o', markersize=0.8, alpha=0.5)
-            plotting.niceLinPlot(ax, dcps, shift2, logx=False, logy=False, color='b',
-                                 linestyle="", marker='o', markersize=0.8, alpha=0.5)
 
     plt.legend()
-    plt.savefig('../images/' + outputFile)
+    plt.savefig('../images/' + 'IH' + outputFile)
 
 if __name__ == '__main__':
     main()

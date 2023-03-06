@@ -198,6 +198,7 @@ def main():
         pars[2] = np.random.uniform(0, 1)
     if const_Mix:
         pars[0] = np.random.normal(0.301, np.sqrt(0.001689))
+        pars[1] = np.random.uniform(0.4, 0.6)
         pars[2] = np.random.normal(0.0218, 0.0007)
 
     th12 = np.arcsin(np.sqrt(pars[0]))
