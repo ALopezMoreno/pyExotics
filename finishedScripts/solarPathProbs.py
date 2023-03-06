@@ -95,7 +95,7 @@ def main():
 
     for i, E in tqdm(enumerate(energies*10**-3), total=len(energies)):
         if avg == 0 or avg == 1:
-            ens = np.asarray([E])
+            ens = np.asarray(E)
         else:
             ens = np.random.uniform(E*0.9, E*1.1, avg)
         print(ens)
