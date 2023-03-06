@@ -83,14 +83,6 @@ def main():
                                                      ne_profile, 0, 696340,
                                                      max_change)
 
-    # Set parallelism stuff
-    max_simultaneous_processes = int(multiprocessing.cpu_count() / len(solver.binCentres))
-    num_processes = len(energies)
-    task_queue = multiprocessing.JoinableQueue()
-    result_queue = multiprocessing.Queue()
-
-    for i in energies:
-        task_queue.put(i)
 
     print('Resulting bins in Potential = ' + str(len(solver.binCentres)))
     probs = np.zeros(energyBin)
@@ -124,6 +116,14 @@ def main():
 
         processes = []
         results = []
+        # Set parallelism stuff
+        max_simultaneous_processes = int(multiprocessing.cpu_count() / len(solver.binCentres))
+        num_processes = len(ens)
+        task_queue = multiprocessing.JoinableQueue()
+        result_queue = multiprocessing.Queue()
+        for j in ens:
+            task_queue.put(j)
+
         for j in range(max_simultaneous_processes):
             p = multiprocessing.Process(target=getProbs_helper, args=[solver, task_queue, result_queue])
             p.start()
