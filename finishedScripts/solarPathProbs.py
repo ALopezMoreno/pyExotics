@@ -45,9 +45,9 @@ def read_config(filename):
 
     return float(eMax), float(eMin), int(nPoints), float(maxChange), int(avg), savefile
 
-def getProbs_helper(energy, mySolver, task_queue):
+def getProbs_helper(mySolver, task_queue):
     while True:
-        task = task_queue.get()
+        energy = task_queue.get()
         # Create copy of object
         solver = copy.deepcopy(mySolver)
         # Assign energies
@@ -86,7 +86,7 @@ def main():
     max_simultaneous_processes = int(multiprocessing.cpu_count() / len(solver.binCentres))
     num_processes = len(energies)
     task_queue = multiprocessing.JoinableQueue()
-    for i in range(num_processes):
+    for i in energies:
         task_queue.put(i)
 
     print('Resulting bins in Potential = ' + str(len(solver.binCentres)))
@@ -121,7 +121,7 @@ def main():
 
         processes = []
         for j in range(max_simultaneous_processes):
-            p = multiprocessing.Process(target=getProbs_helper, args=[[arg, solver, task_queue] for arg in ens])
+            p = multiprocessing.Process(target=getProbs_helper, args=[solver, task_queue])
             p.start()
             processes.append(p)
 
