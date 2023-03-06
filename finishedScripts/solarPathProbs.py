@@ -37,7 +37,7 @@ def read_config(filename):
             elif line.startswith("OUTPUT:"):
                 savefile = line.strip()[7:].strip()
             elif line.startswith("MAX_POTENTIAL_CHANGE_PER_BIN:"):
-                maxChange = line.strip()[28:].strip()
+                maxChange = line.strip()[29:].strip()
             elif line.startswith("AVERAGING_POINTS:"):
                 avg = line.strip()[17:].strip()
 
