@@ -56,6 +56,7 @@ def getProbs_helper(mySolver, task_queue, result_queue):
         output = solver.getProbs(0, 0)
         result_queue.put(output)
         task_queue.task_done()
+        print('done one cycle')
 
 def main():
     # HARDCODED!!
