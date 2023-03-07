@@ -130,18 +130,20 @@ def main():
             p = multiprocessing.Process(target=getProbs_helper, args=[solver, task_queue, result_queue, counter])
             p.start()
             processes.append(p)
-
+        print('we left the multiprocessing loop. Adding all tasks together')
 
         # Wait for all tasks to be processed
         task_queue.join()
 
         # Stop worker processes
+        print('stopping processes')
         for j in range(max_simultaneous_processes):
             task_queue.put(None)
 
         for p in processes:
             p.join()
 
+        print('making sure the result queue isnt empty')
         while not result_queue.empty():
             results.append(result_queue.get())
 
