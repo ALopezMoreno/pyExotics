@@ -139,7 +139,7 @@ def main():
         print('stopping processes')
         for j in range(max_simultaneous_processes):
             task_queue.put(None)
-
+        print('we set the queues to None so that everything gets stopped')
         for p in processes:
             p.join()
 
