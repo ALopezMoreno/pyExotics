@@ -45,7 +45,8 @@ def read_config(filename):
 
     return float(eMax), float(eMin), int(nPoints), float(maxChange), int(avg), savefile
 
-def getProbs_helper(mySolver, task_queue, result_queue):
+def getProbs_helper(mySolver, task_queue, result_queue, counter):
+    count = 0
     for energy in iter(task_queue.get, None):
         # Create copy of object
         solver = copy.deepcopy(mySolver)
@@ -56,7 +57,9 @@ def getProbs_helper(mySolver, task_queue, result_queue):
         output = solver.getProbs(0, 0)
         result_queue.put(output)
         task_queue.task_done()
-        print('done one cycle')
+        count += 1
+        print ('this worker has done ' + str(count) + ' tasks')
+    counter.put(count)
 
 def main():
     # HARDCODED!!
@@ -119,13 +122,15 @@ def main():
         num_processes = len(ens)
         task_queue = multiprocessing.JoinableQueue()
         result_queue = multiprocessing.Queue()
+        counter = multiprocessing.Queue()
         for j in ens:
             task_queue.put(j)
 
         for j in range(max_simultaneous_processes):
-            p = multiprocessing.Process(target=getProbs_helper, args=[solver, task_queue, result_queue])
+            p = multiprocessing.Process(target=getProbs_helper, args=[solver, task_queue, result_queue, counter])
             p.start()
             processes.append(p)
+
 
         # Wait for all tasks to be processed
         task_queue.join()
