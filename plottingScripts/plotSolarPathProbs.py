@@ -16,7 +16,7 @@ def load_data(filename):
     dcps = data[:, 0]
     shifts1 = data[:, 1]
 
-    return dcps, shifts1
+    return np.array([dcps, shifts1])
 
 def main():
     #  Usage: python PlotHierarchyChange.py inputFile.txt outputFile.png
@@ -25,8 +25,10 @@ def main():
 
     plotApprox = False
     plotPvsE = True
-
-    energies, probs = load_data(inputFile)
+    arr = load_data(inputFile).transpose()
+    filtered_arr = arr[arr[:, 1] >= 0.025]
+    energies = filtered_arr[:, 0]
+    probs = filtered_arr[:, 1]
 
     """
     if plotApprox == True:
@@ -50,17 +52,21 @@ def main():
         msw_condition = 1
 
         lma_prob = np.cos(th13)**4 * (1 - 0.5 * np.sin(2*th12)**2)
-        msw_prob = np.cos(th13)**4 * np.sin(th12)**2
+        msw_prob = np.sin(th12)**2 #* np.cos(th13)**4
 
-        beta = 2 * np.sqrt(2) * 1.663787e-5 * np.cos(th13)**2 * 250 * energies * 10**-3 / (7.42 * 10 ** (-5))
+        beta = 2 * np.sqrt(2) * 1.663787e-5 * np.cos(th13)**2 * 180 * energies / (7.42 * 10 ** (-5)) * 10**-3
+        #beta = 0.22 * np.cos(th13)**2 * energies * 7/7.42 #* 2.45
         # calculate where beta hits the msw and vacuum average critical values:
+        matterAngle = np.cos(2*th12) - beta / np.sqrt((np.cos(2*th12-beta)**2) + np.sin(2*th12)**2)
+        probsLMA = np.cos(th13)**4*(0.5+0.5*matterAngle*np.cos(2*th12))
+
         mindeltasA = np.absolute(beta - lma_condition)
         mindeltasB = np.absolute(beta - msw_condition)
         crit_lma = energies[np.where(mindeltasA < 0.1)]
         crit_msw = energies[np.where(mindeltasB < 0.1)]
 
         # get averages (window_sizes must be an odd number)
-        window_size = len(energies) // 20
+        window_size = len(energies) // 10
         if (window_size % 2) == 0:
             window_size += 1
 
@@ -79,16 +85,16 @@ def main():
         plt.grid(True, which="both", axis='x', linestyle='--', linewidth=0.8)
         #plotting.niceLinPlot(ax, energies, probs, logy=False, color='slategray', linewidth=1.5, label=r'$P_{ee}$',
         #                     alpha=0.5)
-        plotting.niceLinPlot(ax, energies, probs, logy=False, color='black', markersize=1, label=r'$P_{ee}$',
-                             alpha=1, linestyle='', marker='o')
-        #plotting.niceLinPlot(ax, energies, probs_avg, logy=False, color='black', linewidth=1.5, label=r'$P_{avg}$')
-        plotting.niceLinPlot(ax, energies, beta, logy=False, color='gold', linewidth=1.7, label=r'$\beta$')
+        plotting.niceLinPlot(ax, energies, probs_avg, logy=False, color='lightsteelblue', linewidth=1.5, label=r'$P_{avg}$')
+        plotting.niceLinPlot(ax, energies, probs, logy=False, color='black', markersize=1.25, label=r'$P_{ee}$',
+                             alpha=0.6, linestyle='', marker='o')
+        plotting.niceLinPlot(ax, energies, probsLMA, logy=False, color='gold', linewidth=1.7, label=r'$\beta$')
 
         if len(crit_lma) and len(crit_msw):
             mean_lma = np.mean(crit_lma)
             mean_msw = np.mean(crit_msw)
-            ax.axvline(x=mean_lma, linestyle='--', color='blue')
-            ax.axvline(x=mean_msw, linestyle='--', color='red')
+            #ax.axvline(x=mean_lma, linestyle='--', color='blue')
+            #ax.axvline(x=mean_msw, linestyle='--', color='red')
 
             plotting.niceLinPlot(ax, energies[energies < mean_lma], lma_prob*np.ones(len(energies[energies < mean_lma])), logy=False, color='blue', linewidth=1.7,
                                  label=r'$P_{LMA}$', alpha=0.8)
@@ -99,6 +105,7 @@ def main():
             print(lma_prob, msw_prob)
 
         ax.set_ylim(0, 1.1)
+        #plotting.niceLinPlot(ax, energies, probs_avg, logy=False, color='black', linewidth=1.5, label=r'$P_{avg}$')
 
         ax.set_xlabel(r'$E(MeV)$', fontsize=15)
         # ax.set_ylabel(r'$\sin^2(2\hat{\theta}_{ij})$', fontsize=15)

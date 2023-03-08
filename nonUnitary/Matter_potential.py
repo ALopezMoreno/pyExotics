@@ -25,7 +25,7 @@ class OscHamiltonian:
         self.M_nu[3, 3] = self.M_sterile*self.central_energy
 
         # Matter potential
-        temp1 = np.sqrt(2) * 1.663787*10**(-5) * self.N_e
+        temp1 = np.sqrt(2) * 5.3948*10**(-5) * self.N_e
         self.V_nu = np.zeros((4, 4))
         self.V_nu[0, 0] = 2*temp1
         if self.sterileMatter:

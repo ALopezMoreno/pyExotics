@@ -11,7 +11,7 @@ from graphing import plotting
 def matterHamiltonian(density, ngens):
     #  nominal matter hamiltonian
     H = np.zeros((ngens, ngens))
-    H[0, 0] = density * 1.663787e-5 * np.sqrt(2)
+    H[0, 0] = density * 5.3948e-5 * np.sqrt(2)
     if ngens>3:
         for i in range(3, ngens):
             H[i, i] = -2/3*H[0, 0]

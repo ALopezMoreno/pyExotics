@@ -82,7 +82,9 @@ def get_shifts_parallel(matterH, th12, th23, th13, dcp, energies, weights, l, my
     # Assumes remaining parameters are in asimov A
     dcps = np.linspace(myRange[0], myRange[1], npoints)
     prop = customPropagator.HamiltonianPropagator(matterH, l, 1)
-    prop.mixingPars = [th12, th13, th23, dcp]
+    prop.mixingPars[0] = th12
+    prop.mixingPars[1] = th13
+    prop.mixingPars[2] = th23
 
     # Remove NaNs and normalise weighs
     weights[np.isnan(weights)] = 1.0
@@ -225,9 +227,9 @@ def main():
     print('*************************************************************')
 
     if sinMode.sinMode:
-        myRange = np.array([-1 + 0.0001, 1 - 0.0001])
+        myRange = [-1 + 0.0001, 1 - 0.0001]
     else:
-        myRange = np.array([-np.pi + 0.0001, np.pi - 0.0001])
+        myRange = [-np.pi + 0.0001, np.pi - 0.0001]
 
     # Number of points you want to calculate the shifts at
     npoints = int(sys.argv[2]) # look for prime numbers and combine?

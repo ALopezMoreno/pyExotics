@@ -176,7 +176,7 @@ class HamiltonianPropagator:
 def matterHamiltonian(density, ngens=3):
     #  nominal matter hamiltonian
     H = np.zeros((ngens, ngens))
-    H[0, 0] = density * 1.663787e-5 * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
+    H[0, 0] = density * 5.3948e-5 * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
     if ngens>3:
         for i in range(3, ngens):
             H[i, i] = -2/3*H[0, 0]
