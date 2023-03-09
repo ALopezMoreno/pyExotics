@@ -36,10 +36,10 @@ def main():
         for data in files:
             print(inputDir+'/'+data)
             dcps, shift1, shift2 = load_data(inputDir+'/'+data)
-            dcps -= np.pi
-            for i in range(len(dcps)):
-                if dcps[i] < -np.pi:
-                    dcps[i] += 2*np.pi
+            #dcps -= np.pi
+            #for i in range(len(dcps)):
+            #    if dcps[i] < -np.pi:
+            #        dcps[i] += 2*np.pi
             plotting.niceLinPlot(ax, dcps, shift1, logx=False, logy=False, color='lightcoral',
                                  linestyle="", marker='o', markersize=1, alpha=1)
 

@@ -173,10 +173,20 @@ class HamiltonianPropagator:
 
 
 # A function containing the usual matter hamiltonian for n generations and a given electron density
-def matterHamiltonian(density, ngens=3):
+def matterHamiltonian(density, ngens=3, earthCrust=False, neOverNa=False, electronDensity=False):
+    # Take care of the units
+
+    if earthCrust:
+        G_f = 5.3948e-5
+    if neOverNa:
+        G_f = 5.4489e-5
+    if electronDensity:
+        G_f = 9.93e-2
+    else:
+        G_f = 1.166e-5
     #  nominal matter hamiltonian
     H = np.zeros((ngens, ngens))
-    H[0, 0] = density * 5.3948e-5 * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
+    H[0, 0] = density * G_f * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
     if ngens>3:
         for i in range(3, ngens):
             H[i, i] = -2/3*H[0, 0]
@@ -238,7 +248,7 @@ def split_range(func, max_change, start, end, start0, end0):
 class VaryingPotentialSolver():
     # A class for solving a path integral approximately by dividing into small
     # sections of constant potential
-    def __init__(self, propagator, matterHam, ne_profile, l_start, l_end, delta_bin, const_binWidth=0):
+    def __init__(self, propagator, matterHam, ne_profile, l_start, l_end, delta_bin, const_binWidth=0, earthCrust=False, neOverNa=False, electronDensity=False):
         # propagator:     a hamiltonian propagator
         # matterHam:      function of the potential to be fed to the propagator
         # ne_profile:      a function of electron number density to feed to the matter Hamiltonian
@@ -254,6 +264,10 @@ class VaryingPotentialSolver():
         self.bounds = np.array([l_start, l_end])
         self.delta_bin = delta_bin
         self.const_binwidth = const_binWidth
+
+        self.earthCrust = earthCrust
+        self.neOverNa = neOverNa
+        self.electronDensity = electronDensity
 
         self.setBinnedPotential()
 
@@ -292,7 +306,7 @@ class VaryingPotentialSolver():
 
     def __transition_helper(self, n_e, L):
         # This function calculates the transition matrix for a uniform potential
-        matterPotential = self.matterH(n_e)
+        matterPotential = self.matterH(n_e, earthCrust=self.earthCrust, neOverNa=self.neOverNa, electronDensity=self.electronDensity)
 
         # create a copy of the propagator to parallelise and set values
         temp_propagator = copy.deepcopy(self.propagator)

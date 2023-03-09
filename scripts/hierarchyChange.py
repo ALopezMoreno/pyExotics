@@ -8,15 +8,6 @@ from matplotlib import pyplot as plt
 from graphing import plotting
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
-def matterHamiltonian(density, ngens):
-    #  nominal matter hamiltonian
-    H = np.zeros((ngens, ngens))
-    H[0, 0] = density * 1.3948e-5 * np.sqrt(2)
-    if ngens>3:
-        for i in range(3, ngens):
-            H[i, i] = -2/3*H[0, 0]
-    return H
-
 def extractMixingAngles(mixMatrix):
     #  get mixing angles from generic unitary 3x3 matrix
 
@@ -50,7 +41,7 @@ l = 295
 E = 0.65
 npoints = 300
 
-matterH = matterHamiltonian(n, 3)
+matterH = customPropagator.matterHamiltonian(n, 3, earthCrust=True)
 
 prop = customPropagator.HamiltonianPropagator(matterH, l, E)
 dcps = np.linspace(-1*np.pi+0.001, 1*np.pi-0.001, npoints)

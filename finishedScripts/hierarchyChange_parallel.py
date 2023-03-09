@@ -235,7 +235,7 @@ def main():
     npoints = int(sys.argv[2]) # look for prime numbers and combine?
 
     # Set the matter effect's contribution to the Hamiltonian
-    matterH = customPropagator.matterHamiltonian(n_e, 3)
+    matterH = customPropagator.matterHamiltonian(n_e, 3, earthCrust=True)
 
     # Get shifts (GPU function)
     normal_hierarchy, inverse_hierarchy = get_shifts_parallel(matterH,

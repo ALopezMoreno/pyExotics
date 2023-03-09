@@ -52,12 +52,12 @@ def main():
         msw_condition = 1
 
         lma_prob = np.cos(th13)**4 * (1 - 0.5 * np.sin(2*th12)**2)
-        msw_prob = np.sin(th12)**2 #* np.cos(th13)**4
+        msw_prob = np.sin(th12)**2 * np.cos(th13)**4
 
-        beta = 2 * np.sqrt(2) * 1.663787e-5 * np.cos(th13)**2 * 180 * energies / (7.42 * 10 ** (-5)) * 10**-3
+        beta = 2 * np.sqrt(2) * 5.3948e-5 * np.cos(th13)**2 * 225 * energies / (7.42 * 10 ** (-5)) * 10**-3
         #beta = 0.22 * np.cos(th13)**2 * energies * 7/7.42 #* 2.45
         # calculate where beta hits the msw and vacuum average critical values:
-        matterAngle = np.cos(2*th12) - beta / np.sqrt((np.cos(2*th12-beta)**2) + np.sin(2*th12)**2)
+        matterAngle = (np.cos(2*th12) - beta) / np.sqrt((np.cos(2*th12)-beta)**2 + np.sin(2*th12)**2)
         probsLMA = np.cos(th13)**4*(0.5+0.5*matterAngle*np.cos(2*th12))
 
         mindeltasA = np.absolute(beta - lma_condition)
