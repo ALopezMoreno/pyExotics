@@ -132,9 +132,9 @@ class HamiltonianPropagator:
 
     def setFullHamiltonian(self):
         if self.antinu:
-            self.hamiltonian = self.vHam - self.newHam
-        else:
             self.hamiltonian = self.vHam + self.newHam
+        else:
+            self.hamiltonian = self.vHam - self.newHam
 
     # propagate according to the plane wave solution of the hamiltonian
     def getAmps(self, alpha, beta):
