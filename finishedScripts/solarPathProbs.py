@@ -115,7 +115,7 @@ def main():
         if avg == 0 or avg == 1:
             ens = np.asarray([E])
         else:
-            ens = np.random.normal(E, E/100, avg)
+            ens = np.random.normal(E, E/20, avg)
 
         processes = []
         results = []
