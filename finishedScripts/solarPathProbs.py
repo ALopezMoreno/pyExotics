@@ -55,6 +55,7 @@ def getProbs_helper(mySolver, task_queue, result_queue, counter):
         # Calculate transition amplitude inside the sun
         solver.setTransitionAmplitude()
         output = solver.getProbs(0, 0)
+        #print(solver.binCentres[0])
         result_queue.put(output)
         task_queue.task_done()
         count += 1
@@ -114,7 +115,7 @@ def main():
         if avg == 0 or avg == 1:
             ens = np.asarray([E])
         else:
-            ens = np.random.normal(E, E/10, avg)
+            ens = np.random.normal(E, E/20, avg)
 
         processes = []
         results = []
