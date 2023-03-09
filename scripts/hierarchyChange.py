@@ -11,7 +11,7 @@ from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 def matterHamiltonian(density, ngens):
     #  nominal matter hamiltonian
     H = np.zeros((ngens, ngens))
-    H[0, 0] = density * 1.663787e-5 * np.sqrt(2)
+    H[0, 0] = density * 1.3948e-5 * np.sqrt(2)
     if ngens>3:
         for i in range(3, ngens):
             H[i, i] = -2/3*H[0, 0]
@@ -48,7 +48,7 @@ def extractMixingAngles(mixMatrix):
 n = 2.6
 l = 295
 E = 0.65
-npoints = 1500
+npoints = 300
 
 matterH = matterHamiltonian(n, 3)
 
@@ -111,7 +111,7 @@ plt.title(r'Difference in probability between $\nu$ and $\bar{\nu}$ channels (HK
 plt.legend(loc='upper left')
 plt.xlabel(r'$\delta_{CP}$')
 plt.ylabel(r'$\Delta P_{\mu \rightarrow e}$')
-#plt.savefig("../images/HK_sindcp_hierarchy_mass_effect.png")
+plt.savefig("../images/probDiff.png")
 
 fig, ax = plt.subplots(nrows=1, ncols=1, dpi=400)
 
