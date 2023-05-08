@@ -15,14 +15,14 @@ def solar_density(l):
     return density
 
 
-nPoints = 10 * int(1000/30)
+nPoints = 1 * int(1000/30)
 #density = np.linspace(0.0001, 10, num=nPoints)
 path = np.linspace(0, 696340, num=nPoints)
 #density = solar_density(path)
 density = np.logspace(-5, 5, num=nPoints)
 
 # SET PROPAGATORS FOR THE ADEQUATE NUMBER OF FLAVOURS
-prop = customPropagator.HamiltonianPropagator(0, 1, 1)
+prop = customPropagator.HamiltonianPropagator(customPropagator.matterHamiltonian, 1, 1, False, False, density[0], ngens=2, neOverNa=True)
 
 prop.masses = prop.masses[:-1]
 print(prop.masses)
@@ -36,8 +36,8 @@ matrices = np.ones((2, 2, nPoints))
 eigenvals = np.ones((2, nPoints))
 for k, rho in tqdm(enumerate(density), total=len(density)):
 
-    matterH = customPropagator.matterHamiltonian(rho, ngens=2, neOverNa=True)
-    prop.new_hamiltonian(matterH)
+    #matterH = customPropagator.matterHamiltonian(rho, ngens=2, neOverNa=True)
+    prop.update_hamiltonian(rho, ngens=2, neOverNa=True)
     P = prop.mixingMatrix
     D = prop.eigenvals
     matrices[:, :, k] = np.real(P)

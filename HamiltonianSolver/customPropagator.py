@@ -24,9 +24,10 @@ def print_caller():
 
 class HamiltonianPropagator:
 
-    def __init__(self, newHamiltonian, args, L, E, IH=False, antinu=False):
+    def __init__(self, newHamiltonian, L, E, IH, antinu, *args, **kwargs):
         # newHamiltonian must be an energy dependent function. In particular,
         # it must be of the form newHamiltonian(E, *args)
+        #IH, antinu = boolean
         # we load up the standard part of the Hamiltonian:
         # INITIALISE WITH DEFAULT PARAMETER VALUES:
         self.E = E
@@ -47,12 +48,14 @@ class HamiltonianPropagator:
 
         # do hamiltonian stuff
         self.hamArgs = args
+        self.hamKwargs = kwargs
         self.functHam = newHamiltonian
-        self.newHam = self.functHam(self.E, *self.hamArgs)
-        self.setFullHamiltonian()
+        self.newHam = self.functHam(self.E, *self.hamArgs, **self.hamKwargs)
+        # We do net set the full hamiltonian until the full form of the (non-default) hamiltonian has ben set
+        # self.setFullHamiltonian()
 
         #maybe chillax on this for the time being:
-        self.eigenvals, self.mixingMatrix = self.getOrderedEigenObjects(self.hamiltonian)
+        # self.eigenvals, self.mixingMatrix = self.getOrderedEigenObjects(self.hamiltonian)
 
         # FINISH THIS AT THE END
 
@@ -193,14 +196,16 @@ class HamiltonianPropagator:
         self.setFullHamiltonian()
         self.eigenvals, self.mixingMatrix = self.getOrderedEigenObjects(self.hamiltonian)
 
-    def update_hamiltonian(self, newArgs):
-        self.hamArgs = newArgs
-        self.newHam = self.functHam(self.E, *self.hamArgs)
+    def update_hamiltonian(self, *args, **kwargs):
+        self.hamArgs = args
+        self.hamKwargs = kwargs
+        self.newHam = self.functHam(self.E, *args, **kwargs)
         self.update()
 
-    def new_funcHamiltonian(self, newHamiltonian, newArgs):
+    def new_funcHamiltonian(self, newHamiltonian, *args, **kwargs):
         self.functHam = newHamiltonian
-        self.hamArgs = newArgs
+        self.hamArgs = args
+        self.hamKwargs = kwargs
 
     def applyNominalHierarchy(self):
         temp_masses = []
@@ -213,7 +218,7 @@ class HamiltonianPropagator:
         self.masses.extend(temp_masses)
 
 # A function containing the usual matter hamiltonian for n generations and a given electron density
-def matterHamiltonian(density, ngens=3, earthCrust=False, neOverNa=False, electronDensity=False):
+def matterHamiltonian(energy, density, ngens=3, earthCrust=False, neOverNa=False, electronDensity=False):
 
     # Take care of the units
     if earthCrust:
