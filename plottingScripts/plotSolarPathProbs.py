@@ -51,19 +51,41 @@ def main():
         lma_condition = np.cos(2*th12)
         msw_condition = 1
 
-        lma_prob = np.cos(th13)**4 * (1 - 0.5 * np.sin(2*th12)**2)
-        msw_prob = np.sin(th12)**2 * np.cos(th13)**4
+        # -------- VACUUM PROB -------- #
+        vacuum_2f = 1 - 0.5 * np.sin(2*th12)**2
+        lma_prob2 = np.cos(th13)**4 * vacuum_2f #* 0.9 ** 2
+        lma_prob = 1 + np.cos(th13)**4 * (1 + vacuum_2f) - 2*np.cos(th13)**2
+        #lma_prob = 1 - 2*(np.cos(th12)**2*np.sin(th12)**2*np.cos(th13)**4 + np.cos(th13)**2*np.sin(th13)**2)
 
-        beta = 2 * np.sqrt(2) * 5.3948e-5 * np.cos(th13)**2 * 225 * energies / (7.42 * 10 ** (-5)) * 10**-3
-        #beta = 0.22 * np.cos(th13)**2 * energies * 7/7.42 #* 2.45
-        # calculate where beta hits the msw and vacuum average critical values:
+
+        # -------- RESONANCE PROB -------- #
+        msw_prob = np.sin(th12)**2 * np.cos(th13)**4 + np.sin(th13)**2
+
+        # msw_prob = 1/2 + (0.9*0.9) * (np.sin(2*th12)**2 - 2)
+
+        # -------- RATIO OF MATTER TO VACUUM -------- #
+        beta2 = (2 * np.sqrt(2) * 5.3948e-5 * np.cos(th13)**2 * 245 * energies * 10 ** -3) / (7.42 * 10 ** (-5))
+        beta = beta2 / np.cos(th13)**2
+        # 5.3948e-5 / np.cos(th12)**2) np.cos(th13)**2 *  5.4489e-5
+
+        # -------- EFFECTIVE ANGLE DUE TO MATTER EFFECT -------- #
+        # matterAngle = (np.cos(2*th12) - beta) / np.sqrt((np.cos(2*th12)-beta)**2 + np.sin(2*th12)**2 + np.cos(th13)**2)
         matterAngle = (np.cos(2*th12) - beta) / np.sqrt((np.cos(2*th12)-beta)**2 + np.sin(2*th12)**2)
-        probsLMA = np.cos(th13)**4*(0.5+0.5*matterAngle*np.cos(2*th12))
+        matterAngle2 = (np.cos(2*th12) - beta2) / np.sqrt((np.cos(2*th12)-beta2)**2 + np.sin(2*th12)**2)
+
+        # -------- FINAL LMA APPROXIMATION CURVE -------- #
+        probsLMA_2f = 0.5 + 0.5 * matterAngle * np.cos(2 * th12)
+        probsLMA_2f2 = 0.5 + 0.5 * matterAngle2 * np.cos(2 * th12)
+        probsLMA = 1 + np.cos(th13)**4 * (1 + probsLMA_2f) - 2*np.cos(th13)**2
+        probsLMA2 = 1 + np.cos(th13)**4 * (1 + probsLMA_2f2) - 2*np.cos(th13)**2  # + np.sin(th13)**2
 
         mindeltasA = np.absolute(beta - lma_condition)
         mindeltasB = np.absolute(beta - msw_condition)
         crit_lma = energies[np.where(mindeltasA < 0.1)]
         crit_msw = energies[np.where(mindeltasB < 0.1)]
+
+
+
 
         # get averages (window_sizes must be an odd number)
         window_size = len(energies) // 10
@@ -81,14 +103,15 @@ def main():
             probs_avg[-i - 1] = np.mean(probs[-i - pad_size - 1:])
 
         #  Make figure and plot grid
-        fig, ax = plt.subplots(nrows=1, ncols=1, dpi=200)
+        fig, ax = plt.subplots(nrows=1, ncols=1, dpi=300)
         plt.grid(True, which="both", axis='x', linestyle='--', linewidth=0.8)
         #plotting.niceLinPlot(ax, energies, probs, logy=False, color='slategray', linewidth=1.5, label=r'$P_{ee}$',
         #                     alpha=0.5)
-        plotting.niceLinPlot(ax, energies, probs_avg, logy=False, color='lightsteelblue', linewidth=1.5, label=r'$P_{avg}$')
         plotting.niceLinPlot(ax, energies, probs, logy=False, color='black', markersize=1.25, label=r'$P_{ee}$',
-                             alpha=0.6, linestyle='', marker='o')
-        plotting.niceLinPlot(ax, energies, probsLMA, logy=False, color='gold', linewidth=1.7, label=r'$\beta$')
+                             alpha=0.5, linestyle='-', marker='o')
+        plotting.niceLinPlot(ax, energies, probsLMA, logy=False, color='gold', linewidth=1.7, label=r'$P_{LMA}$')
+        plotting.niceLinPlot(ax, energies, probsLMA2, logy=False, color='orange', linewidth=1.7, label=r'$P_{LMA2}$')
+        plotting.niceLinPlot(ax, energies, probs_avg, logy=False, color='lightsteelblue', linewidth=1.5, label=r'$P_{avg}$')
 
         if len(crit_lma) and len(crit_msw):
             mean_lma = np.mean(crit_lma)
@@ -97,9 +120,9 @@ def main():
             #ax.axvline(x=mean_msw, linestyle='--', color='red')
 
             plotting.niceLinPlot(ax, energies[energies < mean_lma], lma_prob*np.ones(len(energies[energies < mean_lma])), logy=False, color='blue', linewidth=1.7,
-                                 label=r'$P_{LMA}$', alpha=0.8)
+                                 label=r'$P_{V}$', alpha=0.8)
             plotting.niceLinPlot(ax, energies[energies > mean_msw], msw_prob*np.ones(len(energies[energies > mean_msw])), logy=False, color='red', linewidth=1.7,
-                                 label=r'$P_{MSW}$', alpha=0.8)
+                                 label=r'$P_{MSW} + \sin^2\theta_{13}$', alpha=0.8)
 
             print(mean_lma, mean_msw)
             print(lma_prob, msw_prob)
@@ -113,7 +136,7 @@ def main():
         plt.title(r'Core-created $\nu_{e}$ survival probability at the solar surface (averaged)', fontsize=12)
         plt.legend(loc='upper left')
         plt.savefig('../images/' + outputFile)
-        plt.show()
+        # plt.show()
 
 if __name__ == '__main__':
     main()

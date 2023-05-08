@@ -11,7 +11,9 @@ import copy
 
 class HamiltonianPropagator:
 
-    def __init__(self, newHamiltonian, L, E, IH=False, antinu=False):
+    def __init__(self, newHamiltonian, args, L, E, IH=False, antinu=False):
+        # newHamiltonian must be an energy dependent function. In particular,
+        # it must be of the form newHamiltonian(E, *args)
         # we load up the standard part of the Hamiltonian:
         # INITIALISE WITH DEFAULT PARAMETER VALUES:
         self.E = E
@@ -30,8 +32,12 @@ class HamiltonianPropagator:
         self.vEigenvals, self.vMixingMatrix = self.getOrderedEigenObjects(self.vHam)
 
         # do hamiltonian stuff
-        self.newHam = newHamiltonian
+        self.hamArgs = args
+        self.functHam = newHamiltonian
+        self.newHam = self.functHam(self.E, *self.hamArgs)
         self.setFullHamiltonian()
+
+        #maybe chillax on this for the time being:
         self.eigenvals, self.mixingMatrix = self.getOrderedEigenObjects(self.hamiltonian)
 
         # FINISH THIS AT THE END
@@ -106,6 +112,8 @@ class HamiltonianPropagator:
         # Some basic check
         if len(self.masses) != self.generations:
             print("ERROR: you must have the same amount of masses as neutrinos!")
+            print("Number of masses given: " + str(len(self.masses)))
+            print("Number of neutrino states: " + str(self.generations))
             exit()
 
         massSquares = np.multiply(self.masses, self.masses)
@@ -126,9 +134,12 @@ class HamiltonianPropagator:
 
         sorting_indices = np.argsort(unsorted_eigvals)
         sorted_eigvals = np.asarray(unsorted_eigvals, dtype=float)[sorting_indices]
-        sorted_MixingMatrix = np.asarray(unordered_MixingMatrix, dtype=complex)[:, sorting_indices]
+        sorted_MixingMatrix = np.asarray(unordered_MixingMatrix, dtype=complex)[sorting_indices, :]
 
-        return sorted_eigvals, sorted_MixingMatrix
+        return unsorted_eigvals, unordered_MixingMatrix
+
+    # To find out how to order the eigenvalues, I first must find the dimensionality
+    # of my new hamiltonian
 
     def setFullHamiltonian(self):
         if self.antinu:
@@ -154,16 +165,28 @@ class HamiltonianPropagator:
 
     # Function to update hamiltonian if any input parameters are changed
     def update(self):
-        self.applyNominalHierarchy()
+        if len(self.masses) > 3:
+            temp_masses = self.masses[3:]
+        else:
+            temp_masses = []
+        if len(self.masses) > 2:
+            self.applyNominalHierarchy()
+        if len(temp_masses) > 0:
+            self.masses.extend(temp_masses)
         self.setPMNS(self.generations, self.mixingPars)
         self.setVanillaHamiltonian()
         self.vEigenvals, self.vMixingMatrix = self.getOrderedEigenObjects(self.vHam)
         self.setFullHamiltonian()
         self.eigenvals, self.mixingMatrix = self.getOrderedEigenObjects(self.hamiltonian)
 
-    def new_hamiltonian(self, new):
-        self.newHam = new
+    def update_hamiltonian(self, newArgs):
+        self.hamArgs = newArgs
+        self.newHam = self.functHam(self.E, *self.hamArgs)
         self.update()
+
+    def new_funcHamiltonian(self, newHamiltonian, newArgs):
+        self.functHam = newHamiltonian
+        self.hamArgs = newArgs
 
     def applyNominalHierarchy(self):
         if self.IH:
@@ -248,9 +271,11 @@ def split_range(func, max_change, start, end, start0, end0):
 class VaryingPotentialSolver():
     # A class for solving a path integral approximately by dividing into small
     # sections of constant potential
-    def __init__(self, propagator, matterHam, ne_profile, l_start, l_end, delta_bin, const_binWidth=0, earthCrust=False, neOverNa=False, electronDensity=False):
+    def __init__(self, propagator, matterHam, ne_profile, l_start, l_end, delta_bin, const_binWidth=0, earthCrust=False, neOverNa=False, electronDensity=False, ngens=3):
         # propagator:     a hamiltonian propagator
         # matterHam:      function of the potential to be fed to the propagator
+        # WARNING!!: WHEN INSTANCING THE PROPAGATOR, YOU MUST USE THIS FOR THE
+        # NEW HAMILTONIAN FUNCTION!
         # ne_profile:      a function of electron number density to feed to the matter Hamiltonian
         # l_start, l_end: boundaries for the potential method
         # delta_bin:      the bins need not be the same width. Here we allow a maximum
@@ -268,6 +293,7 @@ class VaryingPotentialSolver():
         self.earthCrust = earthCrust
         self.neOverNa = neOverNa
         self.electronDensity = electronDensity
+        self.ngens=ngens
 
         self.setBinnedPotential()
 
@@ -306,7 +332,7 @@ class VaryingPotentialSolver():
 
     def __transition_helper(self, n_e, L):
         # This function calculates the transition matrix for a uniform potential
-        matterPotential = self.matterH(n_e, earthCrust=self.earthCrust, neOverNa=self.neOverNa, electronDensity=self.electronDensity)
+        matterPotential = self.matterH(n_e, earthCrust=self.earthCrust, neOverNa=self.neOverNa, electronDensity=self.electronDensity, ngens=self.ngens)
 
         # create a copy of the propagator to parallelise and set values
         temp_propagator = copy.deepcopy(self.propagator)

@@ -64,7 +64,7 @@ nthrows = 1
 
 #  calculate matter effect for varying densities
 start = -1
-end = 5
+end = 3
 
 #energies = [0.2, 0.9, 1.05, 7, 8, 10]
 #centralE = 10**-2
@@ -86,9 +86,9 @@ for k in tqdm(range(nthrows)):
             print(h3)
         prop.new_hamiltonian(h3)
         #angls = extractMixingAngles(prop.mixingMatrix)
-        p_osc = [prop.eigenvals[0], prop.eigenvals[1], prop.eigenvals[2], prop.eigenvals[3]*10**-10]
+        p_osc = [prop.eigenvals[0], prop.eigenvals[1], prop.eigenvals[2]]#, prop.eigenvals[3]*10**-10]
 
-        for j in range(4):
+        for j in range(3):
             angles[k][i][j] = p_osc[j]
 
 osc = np.average(angles, axis=0)
@@ -111,7 +111,7 @@ ax.set_xlim(rho[0],rho[-1])
 #plt.title(r'Non-U effective mixing angles in matter for pp, Be$^7$, pep and Be$^8$ neutrinos')
 plt.title(r'Eigenstates of matter hamiltonian for $E_{\nu}=$ 1GeV $m_s=1$MeV')
 plt.suptitle(r'Magnitude of mixing: $sin^2\theta_{i4}=$' + str(magMix))
-for i in range(4):
+for i in range(3):
     ax.axhline(y=osc[0, i], color=colourses[i], linestyle='--', linewidth=1)
     plotting.niceLinPlot(ax, rho, osc[:, i], logy=True, color=colourses[i], linewidth=1.5,
                          label=legends[i])
@@ -131,4 +131,4 @@ plt.legend(loc='upper left')
 #labels[-1] = r'$\bigoplus$'
 #ax.set_xticklabels(labels)
 
-plt.savefig('../images/matterEffect_eigenvalues4flavour_smallMixing_MeV.png')
+plt.savefig('../images/matterEffect_eigenvalues3flavour_smallMixing_MeV.png')
