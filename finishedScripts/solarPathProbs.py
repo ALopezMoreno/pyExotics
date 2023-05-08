@@ -78,13 +78,33 @@ def main():
     # Make list of energies to loop through
     energies = np.logspace(energyMin, energyMax, energyBin)
 
-
+    # Set up propagator
     matterHam = customPropagator.matterHamiltonian
     prop = customPropagator.HamiltonianPropagator(0, 1, 1)
+    prop.generations = 4
+
+    # Set non-unitary parameters
+    S14 = 0.1
+    S24 = 0.2
+    S34 = 0.3
+    Hij = 0.0
+    sterileMass = 10 ** 4
+
+    prop.masses.append(sterileMass)
+
+    prop.mixingPars = [np.arcsin(np.sqrt(0.307)),
+                       np.arcsin(np.sqrt(0.022)),
+                       np.arcsin(np.sqrt(0.561)),
+                       np.arcsin(np.sqrt(S14)),
+                       np.arcsin(np.sqrt(S34)),
+                       np.arcsin(np.sqrt(S24)),
+                       -1.601, Hij, Hij]
+
+    prop.update()
     ne_profile = solar_density
     solver = customPropagator.VaryingPotentialSolver(prop, matterHam,
                                                      ne_profile, 0, 696340,
-                                                     max_change)
+                                                     max_change, neOverNa=True, ngens=4)
 
 
     print('Resulting bins in Potential = ' + str(len(solver.binCentres)))
@@ -115,7 +135,9 @@ def main():
         if avg == 0 or avg == 1:
             ens = np.asarray([E])
         else:
-            ens = np.random.normal(E, E/20, avg)
+            # ens = np.random.normal(E, E/20, avg)
+            diff = 0.5 * 0.5 * 10**-3
+            ens = np.random.uniform( np.max([E*0.1, E - diff]), np.min([E*1.1, E + diff]), avg)
 
         processes = []
         results = []

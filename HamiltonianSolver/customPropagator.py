@@ -9,6 +9,19 @@ from functools import reduce
 from multiprocessing import Pool, cpu_count
 import copy
 
+# ------  THIS IS FOR DEBUGGING - COMMENT OR ADD AS REQUIRED ----- #
+import inspect
+
+def print_caller():
+    # Get the frame of the caller of print_caller (plus however many levels you need)
+    frame = inspect.currentframe().f_back.f_back
+    # Get the filename and line number of the caller of print_caller
+    filename, line_number, function_name, lines, index = inspect.getframeinfo(frame)
+    # Print the line of code that called the function that called print_caller
+    print(f"Caller: {lines[index].strip()}")
+# ---------------------------------------------------------- #
+
+
 class HamiltonianPropagator:
 
     def __init__(self, newHamiltonian, L, E, IH=False, antinu=False):
@@ -19,6 +32,7 @@ class HamiltonianPropagator:
         self.IH = IH
         self.antinu = antinu
         self.generations = 3
+        self.masses = []
         self.applyNominalHierarchy()
         self.mixingPars = [np.arcsin(np.sqrt(0.307)), np.arcsin(np.sqrt(0.022)), np.arcsin(np.sqrt(0.561)), -1.601]
         self.setPMNS(self.generations, self.mixingPars)
@@ -132,9 +146,9 @@ class HamiltonianPropagator:
 
     def setFullHamiltonian(self):
         if self.antinu:
-            self.hamiltonian = self.vHam + self.newHam
-        else:
             self.hamiltonian = self.vHam - self.newHam
+        else:
+            self.hamiltonian = self.vHam + self.newHam
 
     # propagate according to the plane wave solution of the hamiltonian
     def getAmps(self, alpha, beta):
@@ -166,24 +180,28 @@ class HamiltonianPropagator:
         self.update()
 
     def applyNominalHierarchy(self):
+        temp_masses = []
+        if len(self.masses) > 3:
+           temp_masses = self.masses[3:]
         if self.IH:
             self.masses = [np.sqrt(7.42 * 10 ** (-5)), np.sqrt(2.51 * 10 ** (-3)), 0]
         else:
             self.masses = [0, np.sqrt(7.42 * 10 ** (-5)), np.sqrt(2.51 * 10 ** (-3))]
-
+        self.masses.extend(temp_masses)
 
 # A function containing the usual matter hamiltonian for n generations and a given electron density
 def matterHamiltonian(density, ngens=3, earthCrust=False, neOverNa=False, electronDensity=False):
-    # Take care of the units
 
+    # Take care of the units
     if earthCrust:
         G_f = 5.3948e-5
-    if neOverNa:
+    elif neOverNa:
         G_f = 5.4489e-5
-    if electronDensity:
+    elif electronDensity:
         G_f = 9.93e-2
     else:
         G_f = 1.166e-5
+
     #  nominal matter hamiltonian
     H = np.zeros((ngens, ngens))
     H[0, 0] = density * G_f * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
@@ -248,7 +266,7 @@ def split_range(func, max_change, start, end, start0, end0):
 class VaryingPotentialSolver():
     # A class for solving a path integral approximately by dividing into small
     # sections of constant potential
-    def __init__(self, propagator, matterHam, ne_profile, l_start, l_end, delta_bin, const_binWidth=0, earthCrust=False, neOverNa=False, electronDensity=False):
+    def __init__(self, propagator, matterHam, ne_profile, l_start, l_end, delta_bin, const_binWidth=0, earthCrust=False, neOverNa=False, electronDensity=False, ngens=3):
         # propagator:     a hamiltonian propagator
         # matterHam:      function of the potential to be fed to the propagator
         # ne_profile:      a function of electron number density to feed to the matter Hamiltonian
@@ -268,6 +286,7 @@ class VaryingPotentialSolver():
         self.earthCrust = earthCrust
         self.neOverNa = neOverNa
         self.electronDensity = electronDensity
+        self.ngens = ngens
 
         self.setBinnedPotential()
 
@@ -306,7 +325,7 @@ class VaryingPotentialSolver():
 
     def __transition_helper(self, n_e, L):
         # This function calculates the transition matrix for a uniform potential
-        matterPotential = self.matterH(n_e, earthCrust=self.earthCrust, neOverNa=self.neOverNa, electronDensity=self.electronDensity)
+        matterPotential = self.matterH(n_e, earthCrust=self.earthCrust, neOverNa=self.neOverNa, electronDensity=self.electronDensity, ngens=self.ngens)
 
         # create a copy of the propagator to parallelise and set values
         temp_propagator = copy.deepcopy(self.propagator)
