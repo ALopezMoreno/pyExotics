@@ -8,10 +8,12 @@ from math import comb
 from functools import reduce
 from multiprocessing import Pool, cpu_count
 import copy
+import inspect
+from scipy.optimize import root
+from scipy.optimize import linear_sum_assignment
+from typing import Callable, List, Tuple, Set
 
 # ------  THIS IS FOR DEBUGGING - COMMENT OR ADD AS REQUIRED ----- #
-import inspect
-
 def print_caller():
     # Get the frame of the caller of print_caller (plus however many levels you need)
     frame = inspect.currentframe().f_back.f_back
@@ -44,14 +46,16 @@ class HamiltonianPropagator:
         self.setVanillaHamiltonian()
 
         # diagonalise it to recover the input PMNS matrix and masses (this is for sanity check purposes)
+        self.eigenOrder = np.array(range(self.generations))
         self.vEigenvals, self.vMixingMatrix = self.getOrderedEigenObjects(self.vHam)
 
         # do hamiltonian stuff
+        self.hamBounds = []
         self.hamArgs = args
         self.hamKwargs = kwargs
         self.functHam = newHamiltonian
         self.newHam = self.functHam(self.E, *self.hamArgs, **self.hamKwargs)
-        # We do net set the full hamiltonian until the full form of the (non-default) hamiltonian has ben set
+        # We do net set the full hamiltonian until the full form of the (non-default) hamiltonian has been set
         # self.setFullHamiltonian()
 
         #maybe chillax on this for the time being:
@@ -136,27 +140,86 @@ class HamiltonianPropagator:
         massSquares = np.multiply(self.masses, self.masses)
 
         massMatrix = np.diag(massSquares)
-        #print(massSquares)
         Ustar = self.PMNS.conjugate()
 
-        self.vHam = 1 / (2 * self.E) * np.matmul(np.matmul(self.PMNS, massMatrix), Ustar.transpose())
+        self.vHam = np.matmul(np.matmul(self.PMNS, massMatrix), Ustar.transpose())
         # (Energy must be in the same units as the masses)
 
     # diagonalising the hamiltonian will return the eigenvalues in arbitrary order, but we want them in order of
     # increasing masses. Hence, we need to fiddle a bit
-    def getOrderedEigenObjects(self, inputMatrix):
-        ham = sympy.Matrix(inputMatrix)
-        unordered_MixingMatrix, unordered_Eigenvals = ham.diagonalize()
-        unsorted_eigvals = np.abs(np.diag(unordered_Eigenvals))
+    def getOrderedEigenObjects(self, inputMatrix, vacuum=False):
+        #print(inputMatrix)
+        self.eigenOrder = np.array(range(self.generations))
 
+        # ham = sympy.Matrix(inputMatrix)
+        unordered_Eigenvals, unordered_MixingMatrix = np.linalg.eig(inputMatrix)
+        unsorted_eigvals = np.real(unordered_Eigenvals)
         sorting_indices = np.argsort(unsorted_eigvals)
+
         sorted_eigvals = np.asarray(unsorted_eigvals, dtype=float)[sorting_indices]
-        sorted_MixingMatrix = np.asarray(unordered_MixingMatrix, dtype=complex)[sorting_indices, :]
+        sorted_MixingMatrix = np.asarray(unordered_MixingMatrix, dtype=complex)[:, sorting_indices]
 
-        return unsorted_eigvals, unordered_MixingMatrix
+        if not vacuum:
+            # Apply sign normalization
+            for i in range(sorted_MixingMatrix.shape[1]):
+                first_component_computed = sorted_MixingMatrix[0, i]  # First component of the computed eigenvector
+                first_component_target = self.vHam[0, i]  # First component of the target eigenvector
+                phase_diff = np.angle(first_component_target) - np.angle(first_component_computed)  # Phase difference
+                sorted_MixingMatrix[:, i] *= np.exp(-1j * phase_diff)  # Apply phase normalization
 
-    # To find out how to order the eigenvalues, I first must find the dimensionality
-    # of my new hamiltonian
+            #indexes = np.where(np.abs(np.imag(self.vHam)) < 10**-18)[1]
+            #mask = np.where(np.abs(np.imag(self.vHam)) > 10**-18)
+            #for col_index in indexes:
+            #    temp = sorted_MixingMatrix
+            #    temp[mask] = self.vHam[mask]
+            #    column = temp[:, col_index]
+            #    complex_element = self.vHam[:, col_index]
+            #    sign_check = np.sign(np.real(complex_element)) == np.sign(np.real(column))
+            #    if not np.all(sign_check):
+            #        sorted_MixingMatrix[:, col_index] *= -1
+
+        #return sorted_eigvals[self.eigenOrder], sorted_MixingMatrix[:, self.eigenOrder]
+        return sorted_eigvals, sorted_MixingMatrix
+
+
+    def __get_dimensionality(self, func, hamInputs, **kwargs):
+        # Get list of positional arguments for input function
+        inputs = [self.E]
+        inputs.extend(hamInputs)
+        # Get list of positional arguments for input function
+        func_args = [p.name for p in inspect.signature(self.functHam).parameters.values() if
+                     p.default is inspect.Parameter.empty]
+
+        inputs_pos = [inputs[i] for i in range(len(inputs)) if func_args[i] not in kwargs]
+
+        # Evaluate function using input values and record output
+        output = func(*inputs_pos, **kwargs)
+
+        # Vary each input value and record output for each variation
+        output_variations = []
+        for i in range(len(inputs_pos)):
+            inputs_variation = inputs_pos.copy()
+            inputs_variation[i] += 1e-6  # small perturbation to vary input value
+            output_variation = func(*inputs_variation, **kwargs)
+            output_variations.append(output_variation)
+
+        output_variations = np.array(output_variations)
+
+        # Determine dimensionality of output space using SVD
+        U, s, V = np.linalg.svd(output_variations)
+        rank = np.sum(s > 1e-15)
+        output_dim = rank
+
+        # Determine independence of input arguments
+        input_variations = output_variations.T
+        U, s, V = np.linalg.svd(input_variations)
+        rank = np.sum(s > 1e-10)
+        input_dim = rank
+        independent_args = [func_args[i] for i in range(len(inputs)) if func_args[i] not in kwargs][:input_dim]
+        dependent_args = [arg for arg in func_args if arg not in independent_args]
+
+        return input_dim, independent_args, dependent_args
+
 
     def setFullHamiltonian(self):
         if self.antinu:
@@ -190,17 +253,64 @@ class HamiltonianPropagator:
             self.applyNominalHierarchy()
         if len(temp_masses) > 0:
             self.masses.extend(temp_masses)
+
         self.setPMNS(self.generations, self.mixingPars)
         self.setVanillaHamiltonian()
-        self.vEigenvals, self.vMixingMatrix = self.getOrderedEigenObjects(self.vHam)
+        self.vEigenvals, self.vMixingMatrix = self.getOrderedEigenObjects(self.vHam, vacuum=True)
         self.setFullHamiltonian()
+        #print(self.hamiltonian)
+        #print(self.eigenOrder)
         self.eigenvals, self.mixingMatrix = self.getOrderedEigenObjects(self.hamiltonian)
 
+    def set_gens(self, ngens):
+        self.generations = ngens
+        if len(self.masses) > 3:
+            temp_masses = self.masses[3:]
+        else:
+            temp_masses = []
+        if len(self.masses) > 2:
+            self.applyNominalHierarchy()
+        if len(temp_masses) > 0:
+            self.masses.extend(temp_masses)
+        self.setPMNS(self.generations, self.mixingPars)
+        self.setVanillaHamiltonian()
+
     def update_hamiltonian(self, *args, **kwargs):
+
+        self.eigenOrder = np.array(range(self.generations))
         self.hamArgs = args
         self.hamKwargs = kwargs
-        self.newHam = self.functHam(self.E, *args, **kwargs)
+        #self.E = args[0]
+        eig1, M1 = self.getOrderedEigenObjects(self.vHam)
+        log_vals = np.logspace(start=0, stop=2, num=100, endpoint=True)
+        for i in range(101):
+            temp_args = np.array(self.hamArgs) * i / 100
+            self.newHam = self.functHam(self.E, *temp_args, **kwargs)
+            # print(temp_args)
+            self.setFullHamiltonian()
+            # We use the hungarian algorithm to find the correct eigenvalue ordering
+            eig2, M2 = self.getOrderedEigenObjects(self.hamiltonian)  # new eigenvectors
+            # calculate the difference matrix
+            # Calculate the differences between columns of M1 and M2
+            D = np.abs(M1[:, :, np.newaxis] - M2[:, np.newaxis, :])
+
+            # Solve the linear sum assignment problem
+            cost_matrix = np.sum(D, axis=0)
+            # use the Hungarian algorithm to find the minimum cost matching
+            row_ind, col_ind = linear_sum_assignment(cost_matrix)
+            # reorder the eigenvalues and matrix according to the matching. New matrix becomes old
+            M1 = M2[:, col_ind]
+            # save the new ordering
+        self.eigenOrder = col_ind
         self.update()
+
+    def __update_hamiltonian(self, *args, **kwargs):
+        self.hamArgs = args
+        self.hamKwargs = kwargs
+        #self. E = args[0]
+        self.newHam = self.functHam(*args, **kwargs)
+        self.update()
+        return self.eigenvals
 
     def new_funcHamiltonian(self, newHamiltonian, *args, **kwargs):
         self.functHam = newHamiltonian
@@ -232,8 +342,8 @@ def matterHamiltonian(energy, density, ngens=3, earthCrust=False, neOverNa=False
 
     #  nominal matter hamiltonian
     H = np.zeros((ngens, ngens))
-    H[0, 0] = density * G_f * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
-    if ngens>3:
+    H[0, 0] = 2 * energy * density * G_f * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
+    if ngens > 3:
         for i in range(3, ngens):
             H[i, i] = -2/3*H[0, 0]
     return H
@@ -355,13 +465,14 @@ class VaryingPotentialSolver():
 
     def __transition_helper(self, n_e, L):
         # This function calculates the transition matrix for a uniform potential
-        matterPotential = self.matterH(n_e, earthCrust=self.earthCrust, neOverNa=self.neOverNa, electronDensity=self.electronDensity, ngens=self.ngens)
+        #matterPotential = self.matterH(n_e, earthCrust=self.earthCrust, neOverNa=self.neOverNa, electronDensity=self.electronDensity, ngens=self.ngens)
 
         # create a copy of the propagator to parallelise and set values
         temp_propagator = copy.deepcopy(self.propagator)
         temp_propagator.L = L
-        temp_propagator.newHam = matterPotential
-        temp_propagator.update()
+        # temp_propagator.newHam = matterPotential
+        temp_propagator.functHam = self.matterH
+        temp_propagator.update_hamiltonian(n_e, earthCrust=self.earthCrust, neOverNa=self.neOverNa, electronDensity=self.electronDensity, ngens=self.ngens)
         size = temp_propagator.generations
 
         amplitudes = np.zeros((size, size), dtype=complex)
