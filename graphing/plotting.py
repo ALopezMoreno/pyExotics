@@ -9,6 +9,7 @@ import matplotlib.lines as mlines
 import matplotlib as mpl
 from matplotlib import colors
 import matplotlib.patches as patches
+from matplotlib.ticker import EngFormatter
 
 plt.rcParams.update({
     "text.usetex": True,
@@ -63,6 +64,101 @@ cm_data = [[0.2081, 0.1663, 0.5292], [0.2116238095, 0.1897809524, 0.5776761905],
 parula_map = LinearSegmentedColormap.from_list('parula', cm_data)
 parula_map_r = LinearSegmentedColormap.from_list('parula_r', np.flip(cm_data, axis=0))
 
+# Make some good-looking ticks for a plot
+def makeTicks(ax, xdata=None, allsides=False, xnumber=None, ynumber=None, sci=True):
+    if xdata is not None:
+        x_min = min(xdata)
+        x_max = max(xdata)
+        ax.set_xlim(x_min, x_max)
+
+    if allsides:
+        plt.tick_params(axis='both', which='both', top=True, right=True)
+
+    # Define formats
+
+    exponent_formatter = ticker.ScalarFormatter(useMathText=True)
+    def scientific_notation_formatter(value, pos):
+        power = int(np.log10(value))
+        base = value / 10 ** power
+        if base == 1:
+            return f"$10^{{{power}}}$"
+        else:
+            return f"${base:.1f} \\times 10^{{{power}}}$"
+
+
+    # Set the tick locator and formatter for x-axis
+    x_axis_scale = ax.xaxis.get_scale()
+
+    if x_axis_scale == 'log':
+        ax.xaxis.set_major_locator(ticker.LogLocator(subs=[1.0]))
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(scientific_notation_formatter))
+        ax.xaxis.set_minor_locator(ticker.LogLocator(subs=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]))
+
+    elif xnumber != 0:
+        if xnumber is not None:
+            ax.xaxis.set_major_locator(ticker.MaxNLocator(xnumber))
+        else:
+            ax.xaxis.set_major_locator(ticker.AutoLocator())
+        ax.xaxis.set_major_formatter(ticker.ScalarFormatter())
+        ax.xaxis.set_minor_locator(ticker.AutoMinorLocator())
+        major_tick_positions_x = ax.xaxis.get_majorticklocs()
+
+    # Set the tick locator and formatter for y-axis
+    y_axis_scale = ax.yaxis.get_scale()
+
+    if y_axis_scale == 'log':
+        ax.yaxis.set_major_locator(ticker.LogLocator(subs=[1.0]))
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(scientific_notation_formatter))
+        ax.yaxis.set_minor_locator(ticker.LogLocator(subs=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]))
+    elif ynumber != 0:
+        if ynumber is not None:
+            ax.yaxis.set_major_locator(ticker.MaxNLocator(ynumber))
+        else:
+            ax.yaxis.set_major_locator(ticker.AutoLocator())
+        ax.yaxis.set_major_formatter(ticker.ScalarFormatter())
+        #ax.yaxis.set_minor_locator(ticker.AutoMinorLocator())
+        major_tick_positions = ax.yaxis.get_majorticklocs()
+
+
+        # Calculate minor tick positions for the x-axis
+    if x_axis_scale != 'log' and xnumber != 0:
+        minor_tick_positions_x = []
+        for i in range(len(major_tick_positions_x) - 1):
+            major_tick_diff_x = major_tick_positions_x[i + 1] - major_tick_positions_x[i]
+            minor_tick_interval_x = major_tick_diff_x / 6.0  # 5 minor ticks between 2 major ticks
+            minor_tick_positions_x.extend(
+                np.linspace(major_tick_positions_x[i], major_tick_positions_x[i + 1], 6, endpoint=False)[1:])
+
+        # Set the calculated minor tick positions for the x-axis
+        ax.xaxis.set_minor_locator(ticker.FixedLocator(minor_tick_positions_x))
+        if sci:
+            ax.xaxis.set_major_formatter(exponent_formatter)
+
+    if y_axis_scale != 'log' and ynumber != 0:
+        # Calculate minor tick positions
+        minor_tick_positions = []
+        for i in range(len(major_tick_positions) - 1):
+            major_tick_diff = major_tick_positions[i + 1] - major_tick_positions[i]
+            minor_tick_interval = major_tick_diff / 6.0  # 5 minor ticks between 2 major ticks
+            minor_tick_positions.extend(
+                np.linspace(major_tick_positions[i], major_tick_positions[i + 1], 6, endpoint=False)[1:])
+
+        # Set the calculated minor tick positions
+        ax.yaxis.set_minor_locator(ticker.FixedLocator(minor_tick_positions))
+        if sci:
+            ax.yaxis.set_major_formatter(exponent_formatter)
+
+    # Display both major and minor ticks on both and inside sides of the axis
+    ax.xaxis.set_tick_params(which='major', direction='in')
+    ax.yaxis.set_tick_params(which='major', direction='in')
+    ax.xaxis.set_tick_params(which='minor', direction='in')
+    ax.yaxis.set_tick_params(which='minor', direction='in')
+    ax.tick_params(axis='both', which='major', labelsize=11, length=6, width=1)
+    ax.tick_params(axis='both', which='minor', labelsize=11, length=2.5)# Adjust 'labelsize' as needed
+
+    return 0
+
+
 # Make a simple but good-looking line plot
 def niceLinPlot(ax, xdata, ydata, logx=True, logy=True, **kwargs):
     ax.plot(xdata, ydata, **kwargs)
@@ -73,23 +169,27 @@ def niceLinPlot(ax, xdata, ydata, logx=True, logy=True, **kwargs):
     return 0
 
 # Make a simple but good-looking contour map
-def plot2Dcontour(ax, X, Y, data, logx=False, logy=False, cont=False, percentile=None, reverse=False, **kwargs):
+def plot2Dcontour(ax, X, Y, data, nbins=100, col=('r',), logx=False, logy=False, cmap=None, percentile=None, reverse=False, fill=False, **kwargs):
     if reverse:
-        mycmap=parula_map_r
+        mycmap = parula_map_r
     else:
-        mycmap=parula_map
+        mycmap = parula_map
 
-    a = ax.contourf(X, Y, data, 100, cmap=mycmap, **kwargs) #YlGnBu_r
+    if cmap:
+        a = ax.contourf(X, Y, data, nbins, cmap=mycmap, **kwargs) #YlGnBu_r
+
     if logy:
          ax.set_yscale('log')
     if logx:
          ax.set_xscale('log')
-    if percentile:
+    if percentile is not None:
         if not reverse:
             percentile= 100-np.asarray(percentile)
         line = np.percentile(data, percentile)
-        ax.contour(X,Y,data,levels=line, colors=('r',),linestyles=('-',),linewidths=(1,))
-    return a
+        ax.contour(X,Y,data,levels=line, colors=col,linestyles=('-',),linewidths=(1,))
+        if fill:
+            ax.contourf(X, Y, data, levels=[0, line], colors=col, linestyles=('-',), linewidths=(1,), alpha=0.2)
+    return 1
 
 
 

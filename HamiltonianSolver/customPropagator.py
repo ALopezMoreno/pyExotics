@@ -9,9 +9,12 @@ from functools import reduce
 from multiprocessing import Pool, cpu_count
 import copy
 import inspect
+
+from numpy import ndarray
 from scipy.optimize import root
 from scipy.optimize import linear_sum_assignment
 from typing import Callable, List, Tuple, Set
+from scipy.linalg import schur
 
 # ------  THIS IS FOR DEBUGGING - COMMENT OR ADD AS REQUIRED ----- #
 def print_caller():
@@ -25,6 +28,8 @@ def print_caller():
 
 
 class HamiltonianPropagator:
+
+    vHam: ndarray
 
     def __init__(self, newHamiltonian, L, E, IH, antinu, *args, **kwargs):
         # newHamiltonian must be an energy dependent function. In particular,
@@ -41,6 +46,8 @@ class HamiltonianPropagator:
         self.applyNominalHierarchy()
         self.mixingPars = [np.arcsin(np.sqrt(0.307)), np.arcsin(np.sqrt(0.022)), np.arcsin(np.sqrt(0.561)), -1.601]
         self.setPMNS(self.generations, self.mixingPars)
+        self.autoupdate = True # Disable if messing with PMNS matrix
+        self.autoHierarchy = True # Disable if setting masses manually
 
         # compute the vanilla hamiltonian
         self.setVanillaHamiltonian()
@@ -56,12 +63,6 @@ class HamiltonianPropagator:
         self.functHam = newHamiltonian
         self.newHam = self.functHam(self.E, *self.hamArgs, **self.hamKwargs)
         # We do net set the full hamiltonian until the full form of the (non-default) hamiltonian has been set
-        # self.setFullHamiltonian()
-
-        #maybe chillax on this for the time being:
-        # self.eigenvals, self.mixingMatrix = self.getOrderedEigenObjects(self.hamiltonian)
-
-        # FINISH THIS AT THE END
 
     # set an n by n mixing matrix from a set of input mixing parameters
     def setPMNS(self, generations, mixingPars):
@@ -76,8 +77,10 @@ class HamiltonianPropagator:
         # Then we create rotation matrices with phases attached to them
         rotations = []
         phasesApplied = 0
+
         for k in range(expectedAngles):
             mixing = np.identity(generations, dtype=complex)
+
             # ordering of parameters is 12, 13, 23, 14, 24, 34, 15, 25, 35, 45..., phi1, phi2, phi3...
             # in this ordering, the second index of the angle is the largest integer k for which
             # the sum 1+...+(p-1) is smaller or equal to the place of the angle in mixingPars "n"
@@ -97,9 +100,10 @@ class HamiltonianPropagator:
                 index2 = int(guess + 1)
                 index1 = int(k - mySum)
 
+
             mixing[index1, index1] = np.cos(mixingPars[k])
             mixing[index2, index2] = np.cos(mixingPars[k])
-            mixing[index1, index2] = np.sin(mixingPars[k])
+            mixing[index1, index2] =+np.sin(mixingPars[k])
             mixing[index2, index1] =-np.sin(mixingPars[k])
 
             # Now we add the complex Phases:
@@ -111,21 +115,32 @@ class HamiltonianPropagator:
                     phasesApplied += 1
 
             rotations.append(mixing)
-
+        if generations == 4:
+            rotations[0], rotations[1], rotations[2],  rotations[3], rotations[4], rotations[5] = (rotations[5],
+                                                                                                   rotations[4],
+                                                                                                   rotations[3],
+                                                                                                   rotations[2],
+                                                                                                   rotations[1],
+                                                                                                   rotations[0])
         # Now we multiply the rotation matrices together, according to the PDG ordering (thus the swapping):
-        if generations >= 3:
+        if generations == 3:
             rotations[0], rotations[2] = rotations[2], rotations[0]
 
         myPMNS = rotations[0]
 
-        for i in range(1, len(rotations)):
-            myPMNS = np.matmul(myPMNS, rotations[i])
+        for rotation in rotations[1:]:
+            myPMNS = np.matmul(myPMNS, rotation)
+        if generations == 5:
+            print(np.asarray(rotations).real)
+            print(myPMNS.real)
+            exit()
 
         # This should give us a PMNS :D. Take in account mode
         if self.antinu:
-            self.PMNS = myPMNS.conjugate()
+            self.PMNS = np.conj(myPMNS)
         else:
             self.PMNS = myPMNS
+
 
     # set the vacuum hamiltonian
     def setVanillaHamiltonian(self):
@@ -137,9 +152,10 @@ class HamiltonianPropagator:
             print("Number of neutrino states: " + str(self.generations))
             exit()
 
-        massSquares = np.multiply(self.masses, self.masses)
+        #massSquares = np.multiply(self.masses, self.masses)
 
-        massMatrix = np.diag(massSquares)
+        massMatrix = np.diag(self.masses)
+
         Ustar = self.PMNS.conjugate()
 
         self.vHam = np.matmul(np.matmul(self.PMNS, massMatrix), Ustar.transpose())
@@ -148,10 +164,6 @@ class HamiltonianPropagator:
     # diagonalising the hamiltonian will return the eigenvalues in arbitrary order, but we want them in order of
     # increasing masses. Hence, we need to fiddle a bit
     def getOrderedEigenObjects(self, inputMatrix, vacuum=False):
-        #print(inputMatrix)
-        self.eigenOrder = np.array(range(self.generations))
-
-        # ham = sympy.Matrix(inputMatrix)
         unordered_Eigenvals, unordered_MixingMatrix = np.linalg.eig(inputMatrix)
         unsorted_eigvals = np.real(unordered_Eigenvals)
         sorting_indices = np.argsort(unsorted_eigvals)
@@ -163,23 +175,13 @@ class HamiltonianPropagator:
             # Apply sign normalization
             for i in range(sorted_MixingMatrix.shape[1]):
                 first_component_computed = sorted_MixingMatrix[0, i]  # First component of the computed eigenvector
-                first_component_target = self.vHam[0, i]  # First component of the target eigenvector
+                first_component_target = self.vHam[i, 0].conjugate()  # First component of the target eigenvector
                 phase_diff = np.angle(first_component_target) - np.angle(first_component_computed)  # Phase difference
                 sorted_MixingMatrix[:, i] *= np.exp(-1j * phase_diff)  # Apply phase normalization
 
-            #indexes = np.where(np.abs(np.imag(self.vHam)) < 10**-18)[1]
-            #mask = np.where(np.abs(np.imag(self.vHam)) > 10**-18)
-            #for col_index in indexes:
-            #    temp = sorted_MixingMatrix
-            #    temp[mask] = self.vHam[mask]
-            #    column = temp[:, col_index]
-            #    complex_element = self.vHam[:, col_index]
-            #    sign_check = np.sign(np.real(complex_element)) == np.sign(np.real(column))
-            #    if not np.all(sign_check):
-            #        sorted_MixingMatrix[:, col_index] *= -1
-
-        #return sorted_eigvals[self.eigenOrder], sorted_MixingMatrix[:, self.eigenOrder]
-        return sorted_eigvals, sorted_MixingMatrix
+        # We now have to invert the matrix because we have the matrix expressing flav in terms of mass coords
+        # And the PMNS is defined as mass in terms of flav coords
+        return sorted_eigvals, (sorted_MixingMatrix)
 
 
     def __get_dimensionality(self, func, hamInputs, **kwargs):
@@ -232,8 +234,8 @@ class HamiltonianPropagator:
         V1 = self.mixingMatrix
         P = complex(0, 0)
 
-        for i in range(self.generations):
-            phase = self.eigenvals[i] * self.L * 1.27 * 2
+        for i in range(3): # THIS IS HARDCODED FOR THE HNL SCENARIO. SET TO SELF.GENERATIONS FOR GENERIC 3+N!!
+            phase = self.eigenvals[i] * self.L * 1.26693281 * 2 / (2*self.E)
             P += V1[alpha, i].conjugate() * V1[beta, i] * np.exp(-phase * 2j)
 
         return P
@@ -244,17 +246,14 @@ class HamiltonianPropagator:
         return pOsc
 
     # Function to update hamiltonian if any input parameters are changed
-    def update(self):
-        if len(self.masses) > 3:
-            temp_masses = self.masses[3:]
-        else:
-            temp_masses = []
-        if len(self.masses) > 2:
-            self.applyNominalHierarchy()
-        if len(temp_masses) > 0:
-            self.masses.extend(temp_masses)
 
-        self.setPMNS(self.generations, self.mixingPars)
+    def update(self):
+
+        if len(self.masses) > 2 and self.autoHierarchy==True:
+            self.applyNominalHierarchy()
+
+        if self.autoupdate==True:
+            self.setPMNS(self.generations, self.mixingPars)
         self.setVanillaHamiltonian()
         self.vEigenvals, self.vMixingMatrix = self.getOrderedEigenObjects(self.vHam, vacuum=True)
         self.setFullHamiltonian()
@@ -264,44 +263,17 @@ class HamiltonianPropagator:
 
     def set_gens(self, ngens):
         self.generations = ngens
-        if len(self.masses) > 3:
-            temp_masses = self.masses[3:]
-        else:
-            temp_masses = []
-        if len(self.masses) > 2:
+        if len(self.masses) > 2 and self.autoHierarchy==True:
             self.applyNominalHierarchy()
-        if len(temp_masses) > 0:
-            self.masses.extend(temp_masses)
-        self.setPMNS(self.generations, self.mixingPars)
+        if self.autoupdate:
+            self.setPMNS(self.generations, self.mixingPars)
         self.setVanillaHamiltonian()
 
     def update_hamiltonian(self, *args, **kwargs):
-
-        self.eigenOrder = np.array(range(self.generations))
         self.hamArgs = args
         self.hamKwargs = kwargs
-        #self.E = args[0]
-        eig1, M1 = self.getOrderedEigenObjects(self.vHam)
-        log_vals = np.logspace(start=0, stop=2, num=100, endpoint=True)
-        for i in range(101):
-            temp_args = np.array(self.hamArgs) * i / 100
-            self.newHam = self.functHam(self.E, *temp_args, **kwargs)
-            # print(temp_args)
-            self.setFullHamiltonian()
-            # We use the hungarian algorithm to find the correct eigenvalue ordering
-            eig2, M2 = self.getOrderedEigenObjects(self.hamiltonian)  # new eigenvectors
-            # calculate the difference matrix
-            # Calculate the differences between columns of M1 and M2
-            D = np.abs(M1[:, :, np.newaxis] - M2[:, np.newaxis, :])
-
-            # Solve the linear sum assignment problem
-            cost_matrix = np.sum(D, axis=0)
-            # use the Hungarian algorithm to find the minimum cost matching
-            row_ind, col_ind = linear_sum_assignment(cost_matrix)
-            # reorder the eigenvalues and matrix according to the matching. New matrix becomes old
-            M1 = M2[:, col_ind]
-            # save the new ordering
-        self.eigenOrder = col_ind
+        self. E = args[0]
+        self.newHam = self.functHam(*args, **kwargs)
         self.update()
 
     def __update_hamiltonian(self, *args, **kwargs):
@@ -318,13 +290,14 @@ class HamiltonianPropagator:
         self.hamKwargs = kwargs
 
     def applyNominalHierarchy(self):
-        temp_masses = []
-        if len(self.masses) > 3:
-           temp_masses = self.masses[3:]
+        temp_masses = self.masses[3:]
+        dm21 = 7.53 * 10 ** (-5)
         if self.IH:
-            self.masses = [np.sqrt(7.42 * 10 ** (-5)), np.sqrt(2.51 * 10 ** (-3)), 0]
+            dm23 = - 2.494 * 10 ** (-3)
         else:
-            self.masses = [0, np.sqrt(7.42 * 10 ** (-5)), np.sqrt(2.51 * 10 ** (-3))]
+            dm23 = 2.494 * 10 ** (-3)
+
+        self.masses = [0, dm21, dm21+dm23]
         self.masses.extend(temp_masses)
 
 # A function containing the usual matter hamiltonian for n generations and a given electron density
@@ -342,10 +315,10 @@ def matterHamiltonian(energy, density, ngens=3, earthCrust=False, neOverNa=False
 
     #  nominal matter hamiltonian
     H = np.zeros((ngens, ngens))
-    H[0, 0] = 2 * energy * density * G_f * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
+    H[0, 0] = + density * 2 * energy * G_f * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
     if ngens > 3:
         for i in range(3, ngens):
-            H[i, i] = -2/3*H[0, 0]
+            H[i, i] = - H[0, 0] #2/3???
     return H
 
 # A function for recovering mixing angles from a given 3x3 mixing matrix
@@ -478,7 +451,7 @@ class VaryingPotentialSolver():
         amplitudes = np.zeros((size, size), dtype=complex)
         for i in range(size):
             for j in range(size):
-                amplitudes[i, j] = temp_propagator.getAmps(i, j)
+                amplitudes[i, j] = temp_propagator.getAmps(j, i)
         return(amplitudes)
 
     def transition_helper_wrapper(self, args):

@@ -80,7 +80,7 @@ def main():
 
     # Set up propagator
     matterHam = customPropagator.matterHamiltonian
-    prop = customPropagator.HamiltonianPropagator(0, 1, 1)
+    prop = customPropagator.HamiltonianPropagator(customPropagator.matterHamiltonian, 1, 1, False, False, 0, ngens=4)
     prop.generations = 4
 
     # Set non-unitary parameters
@@ -102,6 +102,7 @@ def main():
 
     prop.update()
     ne_profile = solar_density
+    #max_change = 20
     solver = customPropagator.VaryingPotentialSolver(prop, matterHam,
                                                      ne_profile, 0, 696340,
                                                      max_change, neOverNa=True, ngens=4)
@@ -109,7 +110,6 @@ def main():
 
     print('Resulting bins in Potential = ' + str(len(solver.binCentres)))
     probs = np.zeros(energyBin)
-
     # calculate transition amplitude from the surface of the sun to infinity
     # this does not depend on energy
     if getVacuum == True:

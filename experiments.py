@@ -1,6 +1,7 @@
 # Experimental setups for running these toy models
 import numpy as np
-
+import sys
+sys.path.append("./")
 class experiment():
     #  Propagate probabilities for a given energy profile and experimental setup
 
@@ -79,7 +80,7 @@ class eProfile():
     def T2Klike(self):
         # Load T2K near detector flux predictions (-ve horn)
         fluxData = np.loadtxt(
-            "fluxes/T2Kflux2020/t2kflux_2020_public_release/t2kflux_2020_plus250kA_nominal_nd280.txt", skiprows=3, dtype='str')
+            "../fluxes/T2Kflux2020/t2kflux_2020_public_release/t2kflux_2020_plus250kA_nominal_nd280.txt", skiprows=3, dtype='str')
         binEdges = np.append(fluxData[:, 1].astype(float), 30.00)
         self.numuBE = binEdges
         self.numu_barBE = binEdges

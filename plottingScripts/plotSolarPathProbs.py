@@ -53,31 +53,31 @@ def main():
 
         # -------- VACUUM PROB -------- #
         vacuum_2f = 1 - 0.5 * np.sin(2*th12)**2
-        lma_prob2 = np.cos(th13)**4 * vacuum_2f #* 0.9 ** 2
-        lma_prob = 1 + np.cos(th13)**4 * (1 + vacuum_2f) - 2*np.cos(th13)**2
+        #lma_prob2 = np.cos(th13)**4 * vacuum_2f #* 0.9 ** 2
+        lma_prob = np.cos(th13)**4 * vacuum_2f  #np.cos(th13)**4 * (1 + vacuum_2f) #- 2*np.cos(th13)**2
         #lma_prob = 1 - 2*(np.cos(th12)**2*np.sin(th12)**2*np.cos(th13)**4 + np.cos(th13)**2*np.sin(th13)**2)
 
 
         # -------- RESONANCE PROB -------- #
-        msw_prob = np.sin(th12)**2 * np.cos(th13)**4 + np.sin(th13)**2
+        msw_prob = np.sin(th12)**2 * np.cos(th13)**4 #+ np.sin(th13)**2
 
         # msw_prob = 1/2 + (0.9*0.9) * (np.sin(2*th12)**2 - 2)
 
         # -------- RATIO OF MATTER TO VACUUM -------- #
         beta2 = (2 * np.sqrt(2) * 5.3948e-5 * np.cos(th13)**2 * 245 * energies * 10 ** -3) / (7.42 * 10 ** (-5))
-        beta = beta2 / np.cos(th13)**2
+        beta = beta2 #/ np.cos(th13)**2
         # 5.3948e-5 / np.cos(th12)**2) np.cos(th13)**2 *  5.4489e-5
 
         # -------- EFFECTIVE ANGLE DUE TO MATTER EFFECT -------- #
-        # matterAngle = (np.cos(2*th12) - beta) / np.sqrt((np.cos(2*th12)-beta)**2 + np.sin(2*th12)**2 + np.cos(th13)**2)
+        #matterAngle = (np.cos(2*th12) - beta) / np.sqrt((np.cos(2*th12)-beta)**2 + np.sin(2*th12)**2 + np.cos(th13)**2)
         matterAngle = (np.cos(2*th12) - beta) / np.sqrt((np.cos(2*th12)-beta)**2 + np.sin(2*th12)**2)
-        matterAngle2 = (np.cos(2*th12) - beta2) / np.sqrt((np.cos(2*th12)-beta2)**2 + np.sin(2*th12)**2)
+        # matterAngle2 = (np.cos(2*th12) - beta2) / np.sqrt((np.cos(2*th12)-beta2)**2 + np.sin(2*th12)**2)
 
         # -------- FINAL LMA APPROXIMATION CURVE -------- #
-        probsLMA_2f = 0.5 + 0.5 * matterAngle * np.cos(2 * th12)
-        probsLMA_2f2 = 0.5 + 0.5 * matterAngle2 * np.cos(2 * th12)
-        probsLMA = 1 + np.cos(th13)**4 * (1 + probsLMA_2f) - 2*np.cos(th13)**2
-        probsLMA2 = 1 + np.cos(th13)**4 * (1 + probsLMA_2f2) - 2*np.cos(th13)**2  # + np.sin(th13)**2
+        #probsLMA_2f = 0.5 + 0.5 * matterAngle * np.cos(2 * th12)
+        # probsLMA_2f2 = 0.5 + 0.5 * matterAngle2 * np.cos(2 * th12)
+        probsLMA = np.cos(th13)**4 * (1/2 + 1/2*matterAngle*np.cos(2*th12)) #- 2*np.cos(th13)**2
+        #probsLMA2 = 1 + np.cos(th13)**4 * (1 + probsLMA_2f2) - 2*np.cos(th13)**2  # + np.sin(th13)**2
 
         mindeltasA = np.absolute(beta - lma_condition)
         mindeltasB = np.absolute(beta - msw_condition)
@@ -110,7 +110,7 @@ def main():
         plotting.niceLinPlot(ax, energies, probs, logy=False, color='black', markersize=1.25, label=r'$P_{ee}$',
                              alpha=0.5, linestyle='-', marker='o')
         plotting.niceLinPlot(ax, energies, probsLMA, logy=False, color='gold', linewidth=1.7, label=r'$P_{LMA}$')
-        plotting.niceLinPlot(ax, energies, probsLMA2, logy=False, color='orange', linewidth=1.7, label=r'$P_{LMA2}$')
+        #plotting.niceLinPlot(ax, energies, probsLMA2, logy=False, color='orange', linewidth=1.7, label=r'$P_{LMA2}$')
         plotting.niceLinPlot(ax, energies, probs_avg, logy=False, color='lightsteelblue', linewidth=1.5, label=r'$P_{avg}$')
 
         if len(crit_lma) and len(crit_msw):
@@ -122,7 +122,7 @@ def main():
             plotting.niceLinPlot(ax, energies[energies < mean_lma], lma_prob*np.ones(len(energies[energies < mean_lma])), logy=False, color='blue', linewidth=1.7,
                                  label=r'$P_{V}$', alpha=0.8)
             plotting.niceLinPlot(ax, energies[energies > mean_msw], msw_prob*np.ones(len(energies[energies > mean_msw])), logy=False, color='red', linewidth=1.7,
-                                 label=r'$P_{MSW} + \sin^2\theta_{13}$', alpha=0.8)
+                                 label=r'$P_{MSW}$', alpha=0.8)
 
             print(mean_lma, mean_msw)
             print(lma_prob, msw_prob)
