@@ -14,7 +14,7 @@ def setSterileMixing(propagator, scale, h4gen):
     propagator.mixingPars = [np.arcsin(np.sqrt(0.307)), np.arcsin(np.sqrt(0.022)), np.arcsin(np.sqrt(0.561)),
                            np.arcsin(np.sqrt(scale)), np.arcsin(np.sqrt(scale)), np.arcsin(np.sqrt(scale)), -1.601, 0.0, 0.0]
     propagator.generations = 4
-    propagator.new_hamiltonian(h4gen)
+    propagator.newHam = h4gen
     propagator.update()
 
 def matterHamiltonian(density, ngens):
@@ -47,9 +47,11 @@ npoints = 200
 E = np.logspace(0, 3, npoints)  #  Energy in MeV
 nonU_scale = 0.00 #  np.linspace(0, 0.5, npoints)
 
-prop3gen = customPropagator.HamiltonianPropagator(h_solar_3gen, 10**10, 1*10**-2)
-prop4gen = customPropagator.HamiltonianPropagator(h_solar_3gen, 10**10, 1*10**-3)
+prop3gen = customPropagator.HamiltonianPropagator(customPropagator.matterHamiltonian, 10**10, 1*10**-2, False, False, 0, ngens=3)
+prop4gen = customPropagator.HamiltonianPropagator(customPropagator.matterHamiltonian, 10**10, 1*10**-3, False, False, 0, ngens=3)
 
+prop3gen.update()
+prop4gen.update()
 # Get mixing matrices in nominal scenario
 V3_solar = prop3gen.mixingMatrix
 prop3gen.newHam = h_earth_3gen

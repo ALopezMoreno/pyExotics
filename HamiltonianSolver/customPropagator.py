@@ -79,7 +79,7 @@ class HamiltonianPropagator:
         phasesApplied = 0
 
         for k in range(expectedAngles):
-            mixing = np.identity(generations, dtype=complex)
+            mixing = np.identity(generations, dtype=np.complex128)
 
             # ordering of parameters is 12, 13, 23, 14, 24, 34, 15, 25, 35, 45..., phi1, phi2, phi3...
             # in this ordering, the second index of the angle is the largest integer k for which
@@ -106,30 +106,32 @@ class HamiltonianPropagator:
             mixing[index1, index2] =+np.sin(mixingPars[k])
             mixing[index2, index1] =-np.sin(mixingPars[k])
 
+
             # Now we add the complex Phases:
             if phasesApplied < (expectedParNumber - expectedAngles):
                 if index2 + 1 > 2 and phasesApplied < index2:
                     # we apply the phase
                     mixing[index1, index2] *= np.exp(-mixingPars[phasesApplied + expectedAngles] * 1j)
-                    mixing[index2, index1] *= np.exp(mixingPars[phasesApplied + expectedAngles] * 1j)
+                    mixing[index2, index1] *= np.exp(+mixingPars[phasesApplied + expectedAngles] * 1j)
                     phasesApplied += 1
-
             rotations.append(mixing)
-        if generations == 4:
-            rotations[0], rotations[1], rotations[2],  rotations[3], rotations[4], rotations[5] = (rotations[5],
-                                                                                                   rotations[4],
-                                                                                                   rotations[3],
-                                                                                                   rotations[2],
-                                                                                                   rotations[1],
-                                                                                                   rotations[0])
-        # Now we multiply the rotation matrices together, according to the PDG ordering (thus the swapping):
-        if generations == 3:
-            rotations[0], rotations[2] = rotations[2], rotations[0]
 
+        #if generations == 4:
+        #    rotations[0], rotations[1], rotations[2],  rotations[3], rotations[4], rotations[5] = (rotations[5],
+        #                                                                                           rotations[4],
+        #                                                                                           rotations[3],
+        #                                                                                           rotations[2],
+        #                                                                                           rotations[1],
+        #                                                                                           rotations[0])
+
+        # Now we multiply the rotation matrices together, according to the PDG ordering (thus the swapping):
+        #if generations == 3:
+        #    rotations[0], rotations[2] = rotations[2], rotations[0]
         myPMNS = rotations[0]
 
         for rotation in rotations[1:]:
-            myPMNS = np.matmul(myPMNS, rotation)
+            myPMNS = np.matmul(rotation, myPMNS)
+
         if generations == 5:
             print(np.asarray(rotations).real)
             print(myPMNS.real)
@@ -140,6 +142,7 @@ class HamiltonianPropagator:
             self.PMNS = np.conj(myPMNS)
         else:
             self.PMNS = myPMNS
+
 
 
     # set the vacuum hamiltonian
@@ -156,9 +159,10 @@ class HamiltonianPropagator:
 
         massMatrix = np.diag(self.masses)
 
-        Ustar = self.PMNS.conjugate()
+        U = self.PMNS
+        Ustar = U.conjugate()
 
-        self.vHam = np.matmul(np.matmul(self.PMNS, massMatrix), Ustar.transpose())
+        self.vHam = np.matmul(np.matmul(U, massMatrix), Ustar.transpose())
         # (Energy must be in the same units as the masses)
 
     # diagonalising the hamiltonian will return the eigenvalues in arbitrary order, but we want them in order of
@@ -234,10 +238,9 @@ class HamiltonianPropagator:
         V1 = self.mixingMatrix
         P = complex(0, 0)
 
-        for i in range(3): # THIS IS HARDCODED FOR THE HNL SCENARIO. SET TO SELF.GENERATIONS FOR GENERIC 3+N!!
+        for i in range(np.min((self.generations, 3))): # THIS IS HARDCODED FOR THE HNL SCENARIO to range(3). SET TO SELF.GENERATIONS FOR GENERIC 3+N!!
             phase = self.eigenvals[i] * self.L * 1.26693281 * 2 / (2*self.E)
             P += V1[alpha, i].conjugate() * V1[beta, i] * np.exp(-phase * 2j)
-
         return P
 
     def getOsc(self, alpha, beta):
@@ -301,7 +304,7 @@ class HamiltonianPropagator:
         self.masses.extend(temp_masses)
 
 # A function containing the usual matter hamiltonian for n generations and a given electron density
-def matterHamiltonian(energy, density, ngens=3, earthCrust=False, neOverNa=False, electronDensity=False):
+def matterHamiltonian(energy, density, ngens=3, earthCrust=False, neOverNa=False, electronDensity=False, Ndensity=None, N=None):
 
     # Take care of the units
     if earthCrust:
@@ -314,12 +317,28 @@ def matterHamiltonian(energy, density, ngens=3, earthCrust=False, neOverNa=False
         G_f = 1.166e-5
 
     #  nominal matter hamiltonian
+    if Ndensity is None:
+        Ndensity = 0
     H = np.zeros((ngens, ngens))
-    H[0, 0] = + density * 2 * energy * G_f * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
-    if ngens > 3:
-        for i in range(3, ngens):
-            H[i, i] = - H[0, 0] #2/3???
-    return H
+    H[0, 0] = + (density - Ndensity / 2) * 2*energy * G_f * np.sqrt(2)  # sqrt(2)*Fermi_constant*electron_number_density
+
+    for i in range(1, 3):
+        if Ndensity:
+            H[i, i] = - Ndensity / 2 * 2*energy * G_f * np.sqrt(2)
+        else:
+            H[i, i] = 0
+
+    if N is not None:
+        N = N[:, :3]
+        NN_dag = np.matmul(N, N.conj().T)
+        N_dagN = np.matmul(N.conj().T, N)
+        ham = np.matmul(np.matmul(NN_dag, H), NN_dag)
+
+    else:
+        ham = H
+
+    return ham
+
 
 # A function for recovering mixing angles from a given 3x3 mixing matrix
 def extractMixingAngles(mixMatrix):
@@ -334,10 +353,10 @@ def extractMixingAngles(mixMatrix):
     else:
         if mMatrix[1, 1] != 0:
             th12 = np.arctan(mMatrix[1, 0] / mMatrix[1, 1])
-            th23 = np.arcos(mMatrix[1, 1] / np.cos(th12))
+            th23 = np.arccos(mMatrix[1, 1] / np.cos(th12))
         else:
             th12 = np.arctan(mMatrix[2, 0] / mMatrix[2, 1])
-            th23 = np.arcos(mMatrix[1, 0] / np.sin(th12))
+            th23 = np.arccos(mMatrix[1, 0] / np.sin(th12))
 
     if th13 != 0 and th23 != 0 and th12 != 0 and np.cos(th12) != 0 and np.cos(th23) != 0:
         mod = mMatrix[1, 1]**2

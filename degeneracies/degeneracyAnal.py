@@ -8,7 +8,7 @@ import matplotlib as mpl
 from scipy.ndimage import zoom
 
 # LOAD DATA
-diffs = np.load('fullRangeMinimumDegeneracies.npy')
+diffs = np.load('fullRangeMinimumDegeneraciesTest.npy') / 2
 
 nbins = len(diffs[:, 0, 0])
 
@@ -16,11 +16,11 @@ S23 = np.linspace(0, 1, nbins)
 dcp = np.linspace(-np.pi, np.pi, nbins)
 dm23 = np.linspace(2.47 * 10 ** (-3), 2.55 * 10 ** (-3), nbins)
 
-nbins = nbins/2
+nbins = nbins/1
 
 # FUCTION FOR PLOTTING
 def makePlots(probs_big, title, fig_name, colormap=plotting.parula_map, max=0.01):
-    downsampling_factor = 2
+    downsampling_factor = 1
     probs = zoom(probs_big, 1 / downsampling_factor, order=1)
 
     th23_dcp_nu_NH = probs[:, :, int(nbins / 2)]
@@ -32,12 +32,12 @@ def makePlots(probs_big, title, fig_name, colormap=plotting.parula_map, max=0.01
 
     fig, axes = plt.subplots(2, 2, dpi=200, figsize=(8, 8))
     col = axes[0][0].imshow(th23_dcp_nu_NH.T, cmap=colormap, extent=[S23.min(), S23.max(), dcp.min(), dcp.max()],
-                      aspect='auto', vmin=common_vmin, vmax=common_vmax)
+                      aspect='auto', vmin=common_vmin, vmax=common_vmax, origin='lower')
     axes[1][0].imshow(th23_dm23_nu_NH.T, cmap=colormap,
                       extent=[S23.min(), S23.max(), dm23.min(), dm23.max()],
-                      aspect='auto', vmin=common_vmin, vmax=common_vmax)
+                      aspect='auto', vmin=common_vmin, vmax=common_vmax, origin='lower')
     axes[1][1].imshow(dcp_dm23_nu_NH.T, cmap=colormap, extent=[dcp.min(), dcp.max(), dm23.min(), dm23.max()],
-                      aspect='auto', vmin=common_vmin, vmax=common_vmax)
+                      aspect='auto', vmin=common_vmin, vmax=common_vmax, origin='lower')
 
 
     axes[0, 1].axis('off')
@@ -65,5 +65,5 @@ def makePlots(probs_big, title, fig_name, colormap=plotting.parula_map, max=0.01
     plt.show()
 
 
-makePlots(diffs,r'Minimum degeneracy in probabilities between NH and IH - All channels',
-          '../images/degeneracies_map_50_bins_constrained_th23_053-063avg.png', colormap='inferno', max=0.05)
+makePlots(diffs,r'Minimum degeneracy in probabilities between NH and IH -  all $e$ + all $\mu$',
+          '../images/degeneracies_map_alle_allmu.png', colormap='inferno', max=0.01)

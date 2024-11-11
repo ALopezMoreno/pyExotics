@@ -10,13 +10,6 @@ import matplotlib as mpl
 from matplotlib import colors
 import matplotlib.patches as patches
 from matplotlib.ticker import EngFormatter
-
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.serif": ["Computer Modern Roman"]})
-
-
 from matplotlib.colors import LinearSegmentedColormap
 
 cm_data = [[0.2081, 0.1663, 0.5292], [0.2116238095, 0.1897809524, 0.5776761905],
@@ -64,12 +57,63 @@ cm_data = [[0.2081, 0.1663, 0.5292], [0.2116238095, 0.1897809524, 0.5776761905],
 parula_map = LinearSegmentedColormap.from_list('parula', cm_data)
 parula_map_r = LinearSegmentedColormap.from_list('parula_r', np.flip(cm_data, axis=0))
 
+
+def fade_color_to_white(color, alpha):
+    """
+    Fades a given color towards white based on the alpha-like parameter.
+
+    Args:
+        color (str or tuple): The input color in any valid matplotlib format (e.g., 'red', '#FF5733', (0.2, 0.4, 0.6)).
+        alpha (float): The fade parameter, where 0.0 means no fading (original color) and 1.0 means completely white.
+
+    Returns:
+        tuple: A tuple representing the faded color in RGB format.
+    """
+    # Convert the input color to RGB tuple
+    rgb_color = colors.to_rgba(color)[:3]
+
+    # Calculate the faded color by interpolating towards white
+    faded_color = tuple(np.array(rgb_color) * (1 - alpha) + alpha)
+
+    return faded_color
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"]})
+
+
+def create_sequential_colormap(start_color, end_color, num_steps=256):
+    # Convert color strings to RGBA tuples
+    start_color_rgba = colors.to_rgba(start_color)
+    end_color_rgba = colors.to_rgba(end_color)
+
+    # Linearly interpolate RGB values between the two colors
+    r = np.linspace(start_color_rgba[0], end_color_rgba[0], num_steps)
+    g = np.linspace(start_color_rgba[1], end_color_rgba[1], num_steps)
+    b = np.linspace(start_color_rgba[2], end_color_rgba[2], num_steps)
+
+    # Create a colormap dictionary
+    colormap_dict = {
+        'red': [(i / (num_steps - 1), r[i], r[i]) for i in range(num_steps)],
+        'green': [(i / (num_steps - 1), g[i], g[i]) for i in range(num_steps)],
+        'blue': [(i / (num_steps - 1), b[i], b[i]) for i in range(num_steps)]
+    }
+
+    # Create and return the colormap
+    colormap = LinearSegmentedColormap('sequential', colormap_dict)
+    return colormap
+
 # Make some good-looking ticks for a plot
-def makeTicks(ax, xdata=None, allsides=False, xnumber=None, ynumber=None, sci=True):
+def makeTicks(ax, xdata=None, ydata=None, allsides=False, xnumber=None, ynumber=None, sci=True):
     if xdata is not None:
-        x_min = min(xdata)
-        x_max = max(xdata)
+        x_min = np.min(xdata)
+        x_max = np.max(xdata)
         ax.set_xlim(x_min, x_max)
+        
+    if ydata is not None:
+        y_min = np.min(ydata)
+        y_max = np.max(ydata)
+        ax.set_ylim(y_min, y_max)
 
     if allsides:
         plt.tick_params(axis='both', which='both', top=True, right=True)
@@ -153,8 +197,8 @@ def makeTicks(ax, xdata=None, allsides=False, xnumber=None, ynumber=None, sci=Tr
     ax.yaxis.set_tick_params(which='major', direction='in')
     ax.xaxis.set_tick_params(which='minor', direction='in')
     ax.yaxis.set_tick_params(which='minor', direction='in')
-    ax.tick_params(axis='both', which='major', labelsize=11, length=6, width=1)
-    ax.tick_params(axis='both', which='minor', labelsize=11, length=2.5)# Adjust 'labelsize' as needed
+    ax.tick_params(axis='both', which='major', labelsize=18, length=6, width=1)
+    ax.tick_params(axis='both', which='minor', labelsize=18, length=2.5)# Adjust 'labelsize' as needed
 
     return 0
 

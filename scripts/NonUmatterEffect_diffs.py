@@ -24,9 +24,9 @@ S23 = 0.022
 S13 = 0.561
 dcp =-1.601
 
-S14 = 0.05
-S24 = 0.05
-S34 = 0.05
+S14 = 0.
+S24 = 0.
+S34 = 0.
 H1 = 0.0
 mSterile = 10 ** 4
 
@@ -37,11 +37,12 @@ L = 295
 fluxes = experiments.eProfile('T2K')
 counts_ee = np.asarray(fluxes.nue)
 binEdges_ee = np.asarray(fluxes.nueBE)
+counts_mu = np.asarray(fluxes.numu)
+binEdges_mu = np.asarray(fluxes.numuBE)
 
 n = 10**3
 
-energies = np.logspace(np.log10(binEdges_ee[1]), np.log10(binEdges_ee[-1]), n)
-print(np.log10(binEdges_ee[1]), np.log10(binEdges_ee[-1]))
+energies = np.logspace(-2, 1, n)
 #%%
 ## DERIVED PARAMETERS ##
 th12 = np.arcsin(np.sqrt(S12))
@@ -79,7 +80,7 @@ def matterHamiltonian_nonU(energy, density, ngens=3, earthCrust=False, neOverNa=
     H[2, 2] = A_NC
     if ngens > 3:
         for i in range(3, ngens):
-            H[i, i] = -1/2 * H[0, 0]
+            H[i, i] = 1/2 * H[0, 0]
 
     prod = np.matmul(A, A.transpose())
     matterH = np.matmul(prod, H)
@@ -145,10 +146,18 @@ prop.mixingPars = [np.arcsin(np.sqrt(0.307)),
 prop.update()
 
 for i, energy in tqdm(enumerate(energies)):
-    prop.update_hamiltonian(energy, density, ngens=4, earthCrust=True)
-    nonU_ee[i] = prop.getOsc(0, 0)
-    nonU_emu[i] = prop.getOsc(0, 1)
-    nonU_mumu[i] = prop.getOsc(1, 1)
+    elow  = energy*0.9999
+    ehigh = energy*1.0001
+    ens = np.linspace(elow, ehigh, 3)
+    nonU_ee[i] = 0
+    nonU_emu[i] = 0
+    nonU_mumu[i] = 0
+
+    for en in ens:
+        prop.update_hamiltonian(en, density, ngens=4, earthCrust=True)
+        nonU_ee[i] += prop.getOsc(0, 0) / 3.
+        nonU_emu[i] += prop.getOsc(0, 1) / 3.
+        nonU_mumu[i] += prop.getOsc(1, 1) / 3.
 
 ## CASE 1 ##
 
@@ -221,8 +230,9 @@ for i, energy in tqdm(enumerate(energies)):
 #%%
 ## GET PROGPU PROBS ##
 data1 = np.loadtxt("../oscillationProbs/vanilla.txt")
-data2 = np.loadtxt("../oscillationProbs/apparentNonU_mumu.txt")
-data3 = np.loadtxt("../oscillationProbs/apparentNonU.txt")
+data2 = np.loadtxt("../oscillationProbs/probGpu_nonU_un-normalised.txt")
+#data3 = np.loadtxt("../oscillationProbs/apparentNonU.txt")
+data3 = np.loadtxt("../oscillationProbs/probGpu_nonU_normalised.txt")
 
 probs1 = data1[:, 1]
 ens1 = data1[:, 0]
@@ -233,28 +243,49 @@ ens2 = data2[:, 0]
 probs3 = data3[:, 1]
 ens3 = data3[:, 0]
 
+diff_HNL_probGpu = (probs2 - nonU_ee) * 100
+
+
 ## PLOTTING ##
 
-fig, ax = plt.subplots(dpi=300)
+fig, ax = plt.subplots(2, 1, figsize=(5.5, 5.5), dpi=200, sharex=True, gridspec_kw={'height_ratios': [3, 1]})
 
-ax.bar(x=binEdges_ee[:-1], height=counts_ee/np.max(counts_ee), width=np.diff(binEdges_ee),
-       align='edge', fc='blue', alpha=0.3)
+ax[0].bar(x=binEdges_ee[:-1], height=counts_ee/np.max(counts_ee * 2/2), width=np.diff(binEdges_ee),
+       align='edge', fc='blue', alpha=0.3, label=r'$\Phi_e(ND)$')
 
-plotting.niceLinPlot(ax, energies, vanil_emu, logx=True, logy=False, color='black', linewidth=1)
+#ax[0].bar(x=binEdges_mu[:-1], height=counts_mu/np.max(counts_mu * 2/2), width=np.diff(binEdges_mu),
+#       align='edge', fc='green', alpha=0.3, label=r'$\Phi_\mu(ND)$')
+
+plotting.niceLinPlot(ax[0], energies, vanil_ee, logx=True, logy=False, color='black', linewidth=1, label=r'$3\nu$ num')
 #plotting.niceLinPlot(ax, energies, case1_emu, logx=True, logy=False, color='red', linewidth=1)
 #plotting.niceLinPlot(ax, energies, case2_emu, logx=True, logy=False, color='lime', linewidth=1)
 #plotting.niceLinPlot(ax, energies, case3_emu, logx=True, logy=False, color='blue', linewidth=1)
-plotting.niceLinPlot(ax, energies, nonU_emu, logx=True, logy=False, color='gold', linewidth=1)
+plotting.niceLinPlot(ax[0], energies, nonU_ee, logx=True, logy=False, color='gold', linewidth=1, label=r'$4\nu$ num')
 
-#plotting.niceLinPlot(ax, ens1, probs1, logx=True, logy=False, color='red', linewidth=1,
+#plotting.niceLinPlot(ax, ens1, probs1, logx=True, logy=False, color='black', linewidth=1,
 #                     linestyle='-.')
-#plotting.niceLinPlot(ax, ens2, probs2, logx=True, logy=False, color='blue', linewidth=1,
-#                     linestyle='-.')
+plotting.niceLinPlot(ax[0], ens3, probs3, logx=True, logy=False, color='r', linewidth=1,
+                     linestyle='-.', label=r'$4\nu^*$ pGpu')
 
-plotting.niceLinPlot(ax, ens2, probs2*np.cos(th14)**4, logx=True, logy=False, color='red', linewidth=1,
-                     linestyle='-.')
+plotting.niceLinPlot(ax[0], ens2, probs2, logx=True, logy=False, color='blue', linewidth=1,
+                     linestyle='-.', label=r'$4\nu \;$ pGpu')
 
-plotting.makeTicks(ax, energies)
+plotting.niceLinPlot(ax[1], energies, diff_HNL_probGpu, logx=True, logy=False, color='blue', linewidth=1)
+ax[1].axhline(y=0, linewidth=1, color='black')
+ax[1].set_ylim(-1, 1)
+
+plotting.makeTicks(ax[0], energies)
+plotting.makeTicks(ax[1], ynumber=4)
+
+ax[1].set_yticks([-0.5, 0.5])
+
+ax[1].set_xlabel(r'E (GeV)', fontsize=20)
+ax[1].set_ylabel(r'$\Delta \%$', fontsize=20)
+ax[0].set_ylabel(r'$P(\nu_e\to\nu_e)$', fontsize=20)
+plt.subplots_adjust(hspace=0)
+ax[0].legend(fontsize=15)
+plt.tight_layout()
 
 
+plt.savefig('../images/NonU_probGpu_comparison_Pee.png')
 plt.show()

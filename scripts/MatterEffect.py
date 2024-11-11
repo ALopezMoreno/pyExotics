@@ -50,14 +50,13 @@ def extractMixingAngles(mixMatrix):
 #%%
 h4 = matterHamiltonian(0, 4)
 h3 = matterHamiltonian(0, 3)
-magMix=0.001
+magMix = 0.001
 E = 10**3
-prop = customPropagator.HamiltonianPropagator(h3, 295/0.6*E, E*10**-3)
+prop = customPropagator.HamiltonianPropagator(matterHamiltonian, 295/0.6, E*10**-3, False, False, ngens=4)
 prop.masses = [0, np.sqrt(7.42 * 10 ** (-5)), np.sqrt(2.51 * 10 ** (-3)), 10**6]
 prop.mixingPars = [np.arcsin(np.sqrt(0.307)), np.arcsin(np.sqrt(0.022)), np.arcsin(np.sqrt(0.561)),
                    np.arcsin(np.sqrt(magMix)), np.arcsin(np.sqrt(magMix)), np.arcsin(np.sqrt(magMix)), -1.601, 0.0, 0.0]
 prop.generations = 4
-prop.new_hamiltonian(h4)
 prop.update()
 npoints = 200
 nthrows = 1
@@ -82,9 +81,8 @@ for k in tqdm(range(nthrows)):
     # prop.masses[3] = m_sterile[k]
     for i in range(npoints):
         h3 = matterHamiltonian(rho[i], 4)
-        if i == 10:
-            print(h3)
-        prop.new_hamiltonian(h3)
+        prop.update_hamiltonian(rho[i], 4)
+        prop.update()
         #angls = extractMixingAngles(prop.mixingMatrix)
         p_osc = [prop.eigenvals[0], prop.eigenvals[1], prop.eigenvals[2]]#, prop.eigenvals[3]*10**-10]
 
@@ -130,5 +128,5 @@ plt.legend(loc='upper left')
 #labels = [item.get_text() for item in ax.get_xticklabels()]
 #labels[-1] = r'$\bigoplus$'
 #ax.set_xticklabels(labels)
-
-plt.savefig('../images/matterEffect_eigenvalues3flavour_smallMixing_MeV.png')
+plt.show()
+#plt.savefig('../images/matterEffect_eigenvalues3flavour_smallMixing_MeV.png')
